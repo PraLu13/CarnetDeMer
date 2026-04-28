@@ -1,0 +1,1884 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Carnet de Mer">
+<meta name="theme-color" content="#1e1a10">
+<title>Carnet de Mer</title>
+<link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.css"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.min.js"></script>
+<style>
+/* ══════════════════════════════════
+   TOKENS
+══════════════════════════════════ */
+[data-theme="light"] {
+  --bg:#f0ece3; --bg2:#e6e1d6; --bg3:#d8d2c4;
+  --surface:#faf8f3; --surface2:#f2ede4;
+  --border:rgba(60,50,30,0.12); --border2:rgba(60,50,30,0.22);
+  --text:#1e1a10; --text2:#6b5f4a; --text3:#a8997e;
+  --tab-bg:#1e1a10; --tab-active:#f0ece3; --tab-inactive:rgba(240,236,227,0.35);
+  --shadow:0 2px 14px rgba(0,0,0,0.08); --shadow-lg:0 10px 40px rgba(0,0,0,0.13);
+  --pie-hole:rgba(250,248,243,1);
+}
+[data-theme="dark"] {
+  --bg:#111418; --bg2:#181d23; --bg3:#222830;
+  --surface:#1c2128; --surface2:#232b34;
+  --border:rgba(255,255,255,0.08); --border2:rgba(255,255,255,0.15);
+  --text:#e8edf2; --text2:#8a99aa; --text3:#55677a;
+  --tab-bg:#e8edf2; --tab-active:#111418; --tab-inactive:rgba(17,20,24,0.4);
+  --shadow:0 2px 14px rgba(0,0,0,0.4); --shadow-lg:0 10px 40px rgba(0,0,0,0.5);
+  --pie-hole:rgba(28,33,40,1);
+}
+:root {
+  --green:#2e8a55; --green2:#3aaa6a; --green-light:#d4f0e2;
+  --sky:#2478b5; --sky2:#3090d0; --sky-light:#d0e9f7;
+  --accent:#1a4d6e; --accent2:#256090;
+  --tab-h:56px; --radius:10px; --radius-lg:16px;
+}
+
+/* ══════════════════════════════════
+   BASE
+══════════════════════════════════ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;overflow:hidden;}
+/* iOS Safe Area */
+.app{
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);transition:background .3s,color .3s;}
+h1,h2,h3,h4,.page-title,.section-lbl,.kpi-lbl,.ssec,.fsec,.wiz-title,.hist-title,.rec-tbl th,
+.pie-ttl,.hchip,.hf-chip,.tab,.mtb-btn,.map-leg,.btn,.theme-btn,.nv-home h2,.cc h3{
+  text-transform:uppercase;
+}
+/* Data/details stay normal case — override for specific elements */
+.fld label,.fld input,.fld select,.fld textarea,.hist-meta,.hist-date,
+.rec-tbl td,.bar-lbl,.pie-leg-row,.kpi-sub,.hlbl,.mlbl,.shint,
+.placed-ok,.wp-item,.bsm,.btech,.hb-tip{
+  text-transform:none !important;
+}
+
+/* ══════════════════════════════════
+   APP SHELL
+══════════════════════════════════ */
+.app{display:flex;flex-direction:column;height:100vh;}
+.pages{flex:1;overflow:hidden;position:relative;min-height:0;}
+.page{position:absolute;inset:0;display:none;flex-direction:column;}
+.page.active{display:flex;}
+
+/* ══════════════════════════════════
+   TABBAR
+══════════════════════════════════ */
+.tabbar{
+  display:flex;height:var(--tab-h);background:var(--tab-bg);
+  flex-shrink:0;position:relative;z-index:1000;
+}
+.tab{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+  cursor:pointer;color:var(--tab-inactive);font-size:9px;font-weight:700;letter-spacing:.1em;
+  border:none;background:transparent;font-family:'DM Sans',sans-serif;transition:color .2s;
+}
+.tab:hover{color:var(--tab-active);opacity:.75;}
+.tab.active{color:var(--tab-active);}
+.tab svg{width:17px;height:17px;}
+.tab-ind{
+  position:absolute;bottom:0;height:2px;background:var(--tab-active);
+  transition:left .25s cubic-bezier(.4,0,.2,1),width .25s;
+}
+
+/* ══════════════════════════════════
+   THEME BAR — pinned bottom every page
+══════════════════════════════════ */
+.theme-bar{
+  height:calc(40px + env(safe-area-inset-bottom));
+  padding-bottom:env(safe-area-inset-bottom);
+  display:flex;align-items:center;justify-content:space-between;
+  padding-left:16px;padding-right:16px;
+  border-top:1px solid var(--border);background:var(--surface);flex-shrink:0;
+}
+.drive-status{display:flex;align-items:center;gap:7px;}
+.drive-dot{width:7px;height:7px;border-radius:50%;background:var(--text3);flex-shrink:0;transition:background .3s;}
+.drive-dot.connected{background:#2e8a55;box-shadow:0 0 5px rgba(46,138,85,0.5);}
+.drive-dot.syncing{background:#f0a500;animation:pulse .8s infinite alternate;}
+.drive-dot.error{background:#c0392b;}
+@keyframes pulse{from{opacity:1}to{opacity:.3}}
+.drive-status-txt{font-size:10px;color:var(--text2);font-family:"DM Sans",sans-serif;}
+.drive-btn{padding:3px 10px;border-radius:10px;border:1px solid var(--border2);
+  background:transparent;cursor:pointer;font-family:"DM Sans",sans-serif;font-size:10px;
+  font-weight:500;color:var(--text2);transition:all .15s;white-space:nowrap;}
+.drive-btn:hover{background:var(--bg2);}
+.drive-btn.primary{background:var(--accent);color:white;border-color:var(--accent);}
+.drive-btn.primary:hover{background:var(--accent2);}
+.theme-btn{
+  display:flex;align-items:center;gap:6px;cursor:pointer;padding:4px 13px;
+  border-radius:20px;border:1px solid var(--border2);background:transparent;
+  font-family:'DM Sans',sans-serif;font-size:10px;font-weight:500;
+  color:var(--text2);transition:all .15s;letter-spacing:.05em;
+}
+.theme-btn:hover{background:var(--bg2);}
+
+/* ══════════════════════════════════
+   CARTO
+══════════════════════════════════ */
+#page-carto{background:#000;}
+#map{flex:1;width:100%;z-index:1;min-height:0;}
+.map-topbar{
+  position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:400;
+  display:flex;background:var(--surface);border-radius:24px;padding:3px;
+  box-shadow:var(--shadow);border:1px solid var(--border2);
+}
+.mtb-btn{
+  padding:6px 20px;border-radius:20px;font-size:10px;font-weight:700;cursor:pointer;
+  border:none;background:transparent;color:var(--text2);
+  font-family:'DM Sans',sans-serif;transition:all .15s;letter-spacing:.06em;
+}
+.mtb-btn.active{background:var(--tab-bg);color:var(--tab-active);}
+.map-leg{
+  position:absolute;bottom:48px;left:12px;z-index:400;background:var(--surface);
+  border:1px solid var(--border);border-radius:var(--radius);padding:8px 12px;
+  box-shadow:var(--shadow);font-size:11px;color:var(--text2);
+}
+.leg-row{display:flex;align-items:center;gap:7px;margin-bottom:4px;}
+.leg-row:last-child{margin-bottom:0;}
+.leg-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.leg-line{width:18px;height:3px;border-radius:2px;flex-shrink:0;}
+
+/* ══════════════════════════════════
+   STATS
+══════════════════════════════════ */
+#page-stats{background:var(--bg);}
+.stats-body{flex:1;overflow-y:auto;padding:22px 26px 10px;}
+
+/* KPI */
+.kpi-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:24px;}
+.kpi{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);
+  padding:16px 10px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;
+}
+.kpi-lbl{font-size:8px;font-weight:700;letter-spacing:.1em;color:var(--text3);margin-top:6px;}
+.kpi-val{
+  font-family:'Merriweather',serif;font-size:32px;font-weight:900;line-height:1;
+  color:var(--text);
+}
+.kpi-val.small{font-size:20px;}
+.kpi-sub{font-size:9px;color:var(--text2);margin-top:5px;}
+
+/* Section label */
+.ssec{
+  font-size:13px;font-weight:700;letter-spacing:.06em;
+  color:var(--text);margin-bottom:12px;margin-top:4px;
+  border-bottom:1px solid var(--border2);padding-bottom:6px;
+}
+[data-theme="dark"] .ssec{color:var(--text);}
+.sblk{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 18px;margin-bottom:16px;}
+
+/* Records */
+.rec-tbl{width:100%;border-collapse:collapse;}
+.rec-tbl th{text-align:left;font-size:8px;letter-spacing:.09em;color:var(--text3);padding:0 0 8px;font-weight:700;}
+.rec-tbl td{padding:8px 0;font-size:13px;border-top:1px solid var(--border);}
+.rec-tbl tr:first-child td{border-top:none;}
+.rec-sz{font-family:'Merriweather',serif;font-size:17px;font-weight:700;color:var(--accent);}
+[data-theme="dark"] .rec-sz{color:var(--sky2);}
+.btech{font-size:10px;padding:2px 7px;border-radius:10px;text-transform:none;}
+.bp{background:var(--green-light);color:var(--green);}
+.bc{background:var(--sky-light);color:var(--sky);}
+[data-theme="dark"] .bp{background:rgba(46,138,85,0.2);color:#5ecf8a;}
+[data-theme="dark"] .bc{background:rgba(36,120,181,0.2);color:#5ab8f0;}
+
+/* Species block */
+.sp-row{margin-bottom:12px;}
+.sp-row:last-child{margin-bottom:0;}
+.sp-header{display:flex;align-items:baseline;gap:6px;margin-bottom:4px;}
+.sp-name{font-size:13px;font-weight:500;color:var(--text);}
+.sp-meta{font-size:11px;color:var(--text2);}
+.sp-bar-wrap{height:7px;background:var(--bg3);border-radius:4px;overflow:hidden;display:flex;gap:1px;}
+.sp-bar-peche{height:100%;background:var(--green);transition:width .5s ease;}
+.sp-bar-chasse{height:100%;background:var(--sky);transition:width .5s ease;}
+/* Stacked bars (hourly + monthly) */
+.hb-stack{width:100%;display:flex;flex-direction:column-reverse;border-radius:2px 2px 0 0;overflow:hidden;}
+.hb-stack-peche{width:100%;background:var(--green);}
+.hb-stack-chasse{width:100%;background:var(--sky);}
+.mbar-stack{width:100%;display:flex;flex-direction:column-reverse;border-radius:3px 3px 0 0;overflow:hidden;}
+.mbar-stack-peche{width:100%;background:var(--green);}
+.mbar-stack-chasse{width:100%;background:var(--sky);}
+/* Buds checklist */
+.buds-list{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;}
+.bud-item{display:flex;align-items:center;gap:7px;padding:6px 12px;
+  background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius);
+  cursor:pointer;transition:all .15s;user-select:none;}
+.bud-item:hover{border-color:var(--border2);background:var(--bg2);}
+.bud-item.checked{background:var(--accent-light,#ddeef7);border-color:var(--accent);}
+[data-theme="dark"] .bud-item.checked{background:rgba(26,77,110,0.3);border-color:var(--accent2);}
+.bud-check{width:14px;height:14px;border-radius:3px;border:1.5px solid var(--border2);
+  background:transparent;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.bud-item.checked .bud-check{background:var(--accent);border-color:var(--accent);}
+.bud-name{font-size:12px;color:var(--text2);}
+.bud-item.checked .bud-name{color:var(--text);font-weight:500;}
+/* BUD ranking */
+.bud-rank-row{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--border);}
+.bud-rank-row:last-child{border-bottom:none;}
+.bud-rank-num{font-family:"Merriweather",serif;font-size:18px;font-weight:700;color:var(--text3);width:28px;flex-shrink:0;text-align:center;}
+.bud-rank-name{flex:1;font-size:13px;font-weight:500;color:var(--text);}
+.bud-rank-count{font-family:"Merriweather",serif;font-size:16px;font-weight:700;color:var(--accent);}
+.bud-rank-lbl{font-size:10px;color:var(--text3);margin-left:3px;}
+/* Chart legend */
+.chart-legend{display:flex;gap:14px;margin-bottom:10px;}
+.chart-leg-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2);}
+.chart-leg-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0;}
+
+/* Pie charts */
+.pies-wrap{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.pie-blk{text-align:center;}
+.pie-ttl{font-size:9px;font-weight:700;letter-spacing:.09em;color:var(--text2);margin-bottom:10px;}
+.pie-cvs{width:130px;height:130px;display:block;margin:0 auto;}
+.pie-leg{text-align:left;display:inline-block;margin-top:8px;}
+.pie-leg-row{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text2);margin-bottom:3px;}
+.pie-leg-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+
+/* Hourly chart */
+.hchips{display:flex;gap:6px;margin-bottom:10px;}
+.hchip{
+  padding:4px 11px;border-radius:20px;font-size:9px;font-weight:700;letter-spacing:.06em;cursor:pointer;
+  border:1px solid var(--border2);background:var(--surface2);color:var(--text2);
+  font-family:'DM Sans',sans-serif;transition:all .12s;
+}
+.hchip.active{background:var(--tab-bg);color:var(--tab-active);border-color:var(--tab-bg);}
+.hchart-wrap{overflow-x:hidden;}
+.hchart{display:flex;align-items:flex-end;gap:4px;padding-bottom:4px;}
+.hbw{display:flex;flex-direction:column;align-items:center;flex:1;min-width:0;}
+.hb{width:100%;background:var(--accent);border-radius:2px 2px 0 0;min-height:3px;transition:height .4s;}
+.hb.zero{background:var(--bg3);}
+.hb.gn{background:var(--green);}
+.hb.sk{background:var(--sky);}
+.hlbl{font-size:9px;color:var(--text3);margin-top:3px;}
+
+/* Monthly chart */
+.mgrid{display:flex;align-items:flex-end;gap:5px;}
+.mcol{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;justify-content:flex-end;}
+.mbar-w{width:100%;display:flex;align-items:flex-end;}
+.mbar{width:100%;background:var(--accent);border-radius:3px 3px 0 0;min-height:3px;}
+.mbar.z{background:var(--bg3);}
+.mlbl{font-size:9px;color:var(--text3);}
+.mn{font-size:10px;font-weight:700;color:var(--text);}
+.mn.z{color:var(--text3);}
+
+/* ══════════════════════════════════
+   HISTORIQUE
+══════════════════════════════════ */
+#page-historique{background:var(--bg);}
+.hist-body{flex:1;overflow-y:auto;padding:18px 22px 10px;}
+.hist-filters{display:flex;gap:6px;margin-bottom:14px;}
+.hf-chip{
+  padding:5px 13px;border-radius:20px;font-size:9px;font-weight:700;letter-spacing:.06em;cursor:pointer;
+  border:1px solid var(--border2);background:var(--surface);color:var(--text2);
+  font-family:'DM Sans',sans-serif;transition:all .12s;
+}
+.hf-chip.active{background:var(--tab-bg);color:var(--tab-active);border-color:var(--tab-bg);}
+.hist-list{display:flex;flex-direction:column;gap:7px;}
+.hist-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);
+  padding:12px 15px;display:flex;align-items:center;gap:11px;transition:border-color .15s;
+}
+.hist-card:hover{border-color:var(--border2);}
+.hist-icon{width:36px;height:36px;border-radius:var(--radius);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;}
+.hi-prise{background:var(--sky-light);}
+.hi-sortie{background:var(--green-light);}
+[data-theme="dark"] .hi-prise{background:rgba(36,120,181,0.15);}
+[data-theme="dark"] .hi-sortie{background:rgba(46,138,85,0.15);}
+.hist-info{flex:1;min-width:0;}
+.hist-title{font-size:13px;font-weight:700;letter-spacing:.04em;}
+.hist-meta{font-size:11px;color:var(--text2);margin-top:2px;}
+.hist-date{font-size:10px;color:var(--text3);white-space:nowrap;flex-shrink:0;margin-right:4px;}
+.hist-actions{display:flex;gap:5px;flex-shrink:0;}
+.hact-btn{
+  height:30px;padding:0 12px;border-radius:var(--radius);border:1px solid var(--border2);
+  background:var(--surface2);cursor:pointer;display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:500;color:var(--text2);transition:all .12s;
+  font-family:"DM Sans",sans-serif;white-space:nowrap;gap:4px;
+}
+.hact-btn:hover{background:var(--bg2);border-color:var(--border2);}
+.hact-btn.del:hover{background:#fde8e8;color:#922;border-color:#f5bcbc;}
+.hist-empty{text-align:center;padding:60px 20px;color:var(--text3);font-size:13px;}
+
+/* ══════════════════════════════════
+   NOUVEAU
+══════════════════════════════════ */
+#page-nouveau{background:var(--bg);}
+.nv-home-wrap{flex:1;overflow-y:auto;display:flex;flex-direction:column;}
+.nv-home{padding:28px 24px;flex:1;}
+.nv-home h2{font-family:'Merriweather',serif;font-size:20px;font-weight:900;margin-bottom:20px;letter-spacing:.04em;}
+.choice-cards{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.cc{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);
+  padding:26px 18px;cursor:pointer;transition:all .15s;text-align:center;
+}
+.cc:hover{box-shadow:var(--shadow);border-color:var(--border2);transform:translateY(-2px);}
+.cc-icon{font-size:28px;margin-bottom:8px;}
+.cc h3{font-size:11px;font-weight:700;letter-spacing:.08em;}
+
+/* WIZARD */
+.wizard{display:none;flex-direction:column;position:absolute;inset:0;background:var(--bg);z-index:50;overflow:hidden;}
+.wizard.active{display:flex;}
+.wiz-hdr{
+  display:flex;align-items:center;gap:10px;padding:13px 20px 10px;
+  border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0;
+}
+.wiz-back{
+  width:30px;height:30px;border-radius:50%;border:1px solid var(--border2);
+  background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  color:var(--text2);font-size:14px;flex-shrink:0;
+}
+.wiz-title{font-family:'Merriweather',serif;font-size:14px;font-weight:700;flex:1;letter-spacing:.04em;}
+.sdots{display:flex;gap:5px;align-items:center;}
+.sdot{width:7px;height:7px;border-radius:50%;background:var(--bg3);transition:all .2s;}
+.sdot.dn{background:var(--accent);}
+.sdot.cur{background:var(--accent);transform:scale(1.4);}
+.wiz-body{flex:1;overflow-y:auto;}
+.wstep{display:none;padding:18px 22px;}
+.wstep.active{display:block;}
+.smap{width:100%;height:370px;border-radius:var(--radius-lg);overflow:hidden;border:1px solid var(--border);}
+.shint{background:var(--accent);color:white;border-radius:var(--radius);padding:8px 13px;font-size:12px;margin-bottom:9px;line-height:1.5;}
+.placed-ok{background:var(--green-light);border:1px solid rgba(46,138,85,0.3);color:var(--green);border-radius:var(--radius);padding:6px 11px;font-size:12px;margin-top:7px;}
+[data-theme="dark"] .placed-ok{background:rgba(46,138,85,0.15);color:#5ecf8a;}
+.map-acts{display:flex;gap:7px;margin-top:7px;flex-wrap:wrap;}
+.wp-list{margin-top:7px;display:flex;flex-direction:column;gap:3px;}
+.wp-item{display:flex;align-items:center;justify-content:space-between;background:var(--sky-light);border:1px solid rgba(36,120,181,0.2);border-radius:var(--radius);padding:5px 10px;font-size:11px;color:var(--sky);}
+[data-theme="dark"] .wp-item{background:rgba(36,120,181,0.12);color:#5ab8f0;}
+
+/* Form */
+.fsec{font-size:9px;font-weight:700;letter-spacing:.1em;color:var(--text3);margin:15px 0 9px;}
+.fsec:first-child{margin-top:0;}
+.fg{display:grid;gap:11px;}
+.f2{grid-template-columns:1fr 1fr;}
+.f3{grid-template-columns:1fr 1fr 1fr;}
+.fld label{display:block;font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:500;}
+.fld input,.fld select,.fld textarea{
+  width:100%;padding:8px 10px;border:1px solid var(--border2);border-radius:var(--radius);
+  font-size:13px;font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);
+  outline:none;transition:border-color .15s;
+}
+.fld input:focus,.fld select:focus,.fld textarea:focus{border-color:var(--accent);}
+.fld textarea{height:78px;resize:vertical;}
+.ttech{display:grid;grid-template-columns:1fr 1fr;gap:9px;}
+.ttbtn{padding:13px 8px;border-radius:var(--radius-lg);border:1.5px solid var(--border2);background:var(--surface);cursor:pointer;text-align:center;transition:all .15s;font-family:'DM Sans',sans-serif;}
+.ttbtn:hover{box-shadow:var(--shadow);}
+.ttbtn.ag{border-color:var(--green);background:var(--green-light);}
+.ttbtn.ab{border-color:var(--sky);background:var(--sky-light);}
+[data-theme="dark"] .ttbtn.ag{background:rgba(46,138,85,0.15);}
+[data-theme="dark"] .ttbtn.ab{background:rgba(36,120,181,0.15);}
+.ti{font-size:20px;margin-bottom:4px;}
+.tl{font-size:12px;font-weight:500;color:var(--text);text-transform:none;}
+.ttbtn.ag .tl{color:var(--green);}
+.ttbtn.ab .tl{color:var(--sky);}
+.rtog{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:4px;}
+.rbtn{padding:8px;border-radius:var(--radius);border:1.5px solid var(--border2);background:var(--surface);cursor:pointer;text-align:center;font-size:12px;font-weight:500;transition:all .15s;font-family:'DM Sans',sans-serif;color:var(--text2);text-transform:none;}
+.rbtn.active{border-color:var(--accent);background:var(--sky-light);color:var(--accent);}
+[data-theme="dark"] .rbtn.active{background:rgba(36,120,181,0.2);}
+.wiz-ftr{padding:11px 22px 16px;border-top:1px solid var(--border);background:var(--surface);display:flex;gap:9px;justify-content:flex-end;flex-shrink:0;}
+.btn{display:inline-flex;align-items:center;gap:7px;padding:8px 18px;border-radius:var(--radius);font-size:10px;font-weight:700;letter-spacing:.06em;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;border:none;}
+.btn-p{background:var(--accent);color:white;}
+.btn-p:hover{background:var(--accent2);}
+.btn-g{background:transparent;color:var(--text2);border:1px solid var(--border2);}
+.btn-g:hover{background:var(--bg2);}
+.btn-ok{background:var(--green);color:white;}
+.btn-ok:hover{background:var(--green2);}
+.bsm{background:var(--surface2);color:var(--text2);border:1px solid var(--border2);font-size:11px;padding:5px 11px;border-radius:var(--radius);cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .12s;text-transform:none;}
+.bsm:hover{background:var(--bg2);}
+
+/* MODAL */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(10,10,10,0.55);z-index:2000;align-items:center;justify-content:center;backdrop-filter:blur(2px);}
+.modal-bg.open{display:flex;}
+.modal{background:var(--surface);border-radius:var(--radius-lg);padding:22px 26px;width:520px;max-width:95vw;max-height:88vh;overflow-y:auto;box-shadow:var(--shadow-lg);}
+.modal-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;}
+.modal-ttl{font-family:'Merriweather',serif;font-size:15px;font-weight:700;letter-spacing:.04em;}
+.modal-x{width:28px;height:28px;border-radius:50%;background:var(--bg2);border:none;cursor:pointer;font-size:16px;color:var(--text2);display:flex;align-items:center;justify-content:center;}
+.modal-ftr{display:flex;gap:9px;justify-content:flex-end;margin-top:18px;}
+.modal-ta{width:100%;padding:8px 10px;border:1px solid var(--border2);border-radius:var(--radius);font-size:13px;font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);outline:none;height:70px;resize:vertical;}
+
+.map-layer-sel{
+  position:absolute;bottom:48px;right:12px;z-index:400;
+  display:flex;flex-direction:column;gap:4px;
+}
+.mls-btn{
+  display:flex;align-items:center;gap:7px;padding:6px 11px;
+  background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius);
+  font-size:11px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;
+  color:var(--text2);transition:all .15s;box-shadow:var(--shadow);white-space:nowrap;
+  text-transform:none;
+}
+.mls-btn:hover{background:var(--bg2);}
+.mls-btn.active{background:var(--tab-bg);color:var(--tab-active);border-color:var(--tab-bg);}
+.mls-icon{font-size:13px;}
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
+@media(max-width:900px){.kpi-grid{grid-template-columns:repeat(3,1fr);}}
+@media(max-width:560px){.kpi-grid{grid-template-columns:repeat(2,1fr);}.pies-wrap{grid-template-columns:1fr;}.stats-body,.hist-body{padding:14px 14px 8px;}}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- TABBAR -->
+<div class="tabbar">
+  <button class="tab active" onclick="showTab('carto',0)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>Cartes
+  </button>
+  <button class="tab" onclick="showTab('stats',1)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Statistiques
+  </button>
+  <button class="tab" onclick="showTab('historique',2)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10"/><polyline points="12 6 12 12 16 14"/><path d="M22 2L17 7"/><path d="M17 2h5v5"/></svg>Fil Info
+  </button>
+  <button class="tab" onclick="showTab('nouveau',3)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>Nouveau
+  </button>
+  <div class="tab-ind" id="tab-ind" style="left:0;width:25%"></div>
+</div>
+
+<div class="pages">
+
+<!-- ══════════════ CARTO ══════════════ -->
+<div class="page active" id="page-carto">
+  <div class="map-topbar">
+    <button class="mtb-btn active" id="tog-prises" onclick="setMapView('prises')">Prises</button>
+    <button class="mtb-btn" id="tog-sorties" onclick="setMapView('sorties')">Sorties</button>
+    <button class="mtb-btn" id="tog-tout" onclick="setMapView('tout')">Tout</button>
+  </div>
+  <div id="map"></div>
+  <div class="map-leg" id="leg-prises">
+    <div class="leg-row"><div class="leg-dot" style="background:#2e8a55"></div>Pêche</div>
+    <div class="leg-row"><div class="leg-dot" style="background:#2478b5"></div>Chasse</div>
+  </div>
+  <div class="map-leg" id="leg-sorties" style="display:none">
+    <div class="leg-row"><div class="leg-line" style="background:#2e8a55"></div>Sortie pêche</div>
+    <div class="leg-row"><div class="leg-line" style="background:#2478b5"></div>Sortie chasse</div>
+  </div>
+  <div class="map-leg" id="leg-tout" style="display:none">
+    <div class="leg-row"><div class="leg-dot" style="background:#2e8a55"></div>Prise pêche</div>
+    <div class="leg-row"><div class="leg-dot" style="background:#2478b5"></div>Prise chasse</div>
+    <div class="leg-row"><div class="leg-line" style="background:#2e8a55"></div>Sortie pêche</div>
+    <div class="leg-row"><div class="leg-line" style="background:#2478b5"></div>Sortie chasse</div>
+  </div>
+  <div class="map-layer-sel" id="main-layer-sel">
+    <button class="mls-btn active" id="mls-std" onclick="setBaseLayer('std','main')"><span class="mls-icon">🗺️</span>Standard</button>
+    <button class="mls-btn" id="mls-sat" onclick="setBaseLayer('sat','main')"><span class="mls-icon">🛰️</span>Satellite</button>
+  </div>
+  <div class="theme-bar">
+    <div class="drive-status">
+      <div class="drive-dot" id="drive-dot"></div>
+      <span class="drive-status-txt" id="drive-status-txt">Non connecté</span>
+      <button class="drive-btn" id="drive-sync-btn" onclick="driveSync()" style="display:none">↻ Sync</button>
+      <button class="drive-btn primary" id="drive-connect-btn" onclick="driveSignIn()">Connecter Drive</button>
+    </div>
+    <button class="theme-btn" onclick="toggleTheme()"><span class="ti-ic">☀️</span>&nbsp;<span class="ti-lb">Mode clair</span></button>
+  </div>
+</div>
+<div class="page" id="page-stats">
+  <div class="stats-body" id="stats-body">
+    <div style="font-family:'Merriweather',serif;font-size:20px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;margin-bottom:20px;">Statistiques</div>
+    <div class="ssec">Général</div>
+    <div class="kpi-grid" id="kpi-grid"></div>
+    <div class="ssec">Records</div>
+    <div class="sblk"><table class="rec-tbl"><thead><tr><th>Espèce</th><th>Taille</th><th>Date</th><th>Technique</th></tr></thead><tbody id="rec-body"></tbody></table></div>
+    <div class="ssec">Espèces</div>
+    <div class="sblk" id="sp-block"></div>
+    <div class="ssec">Techniques</div>
+    <div class="sblk">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+        <div>
+          <div style="font-size:11px;font-weight:700;letter-spacing:.07em;color:var(--green);text-transform:uppercase;margin-bottom:12px;">🎣 Pêche <span id="tech-total-peche" style="font-weight:400;font-size:10px;color:var(--text2)"></span></div>
+          <div id="tech-bars-peche"></div>
+          <div id="tech-nodata-peche" style="font-size:12px;color:var(--text3);font-style:italic;display:none">Aucune donnée</div>
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:700;letter-spacing:.07em;color:var(--sky);text-transform:uppercase;margin-bottom:12px;">🤿 Chasse <span id="tech-total-chasse" style="font-weight:400;font-size:10px;color:var(--text2)"></span></div>
+          <div id="tech-bars-chasse"></div>
+          <div id="tech-nodata-chasse" style="font-size:12px;color:var(--text3);font-style:italic;display:none">Aucune donnée</div>
+        </div>
+      </div>
+    </div>
+    <div class="ssec">Répartition horaire</div>
+    <div class="sblk">
+      <div class="hchips">
+        <button class="hchip active" onclick="setHF('all',this)">Toutes</button>
+        <button class="hchip" onclick="setHF('peche',this)">Pêche</button>
+        <button class="hchip" onclick="setHF('chasse',this)">Chasse</button>
+      </div>
+      <div class="chart-legend">
+        <div class="chart-leg-item"><div class="chart-leg-dot" style="background:var(--green)"></div>Pêche</div>
+        <div class="chart-leg-item"><div class="chart-leg-dot" style="background:var(--sky)"></div>Chasse</div>
+      </div>
+      <div class="hchart-wrap"><div class="hchart" id="hchart"></div></div>
+    </div>
+    <div class="ssec">Répartition mensuelle</div>
+    <div class="sblk">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap;">
+        <select id="month-yr-sel" onchange="renderMonthly()" style="padding:4px 10px;border:1px solid var(--border2);border-radius:var(--radius);font-size:12px;font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);outline:none;"></select>
+        <span id="monthly-total" style="font-size:12px;color:var(--text2);"></span>
+      </div>
+      <div class="chart-legend">
+        <div class="chart-leg-item"><div class="chart-leg-dot" style="background:var(--green)"></div>Pêche</div>
+        <div class="chart-leg-item"><div class="chart-leg-dot" style="background:var(--sky)"></div>Chasse</div>
+      </div>
+      <div class="mgrid" id="mgrid"></div>
+      <div id="monthly-detail" style="display:none;margin-top:14px;padding-top:12px;border-top:1px solid var(--border);">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <span id="monthly-detail-title" style="font-size:12px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:.06em;"></span>
+          <button onclick="document.getElementById('monthly-detail').style.display='none'" style="background:transparent;border:none;cursor:pointer;color:var(--text3);font-size:16px;padding:0 4px;">×</button>
+        </div>
+        <div id="monthly-detail-list" style="font-size:12px;color:var(--text2);"></div>
+      </div>
+    </div>
+    <div class="ssec">Bud</div>
+    <div class="sblk" id="bud-ranking"></div>
+    <div style="height:8px"></div>
+  </div>
+  <div class="theme-bar">
+    <div></div>
+    <button class="theme-btn" onclick="toggleTheme()"><span class="ti-ic">☀️</span>&nbsp;<span class="ti-lb">Mode clair</span></button>
+  </div>
+</div>
+
+<!-- ══════════════ HISTORIQUE ══════════════ -->
+<div class="page" id="page-historique">
+  <div class="hist-body">
+    <div style="font-family:'Merriweather',serif;font-size:20px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;margin-bottom:20px;margin-bottom:16px;">Fil Info</div>
+    <div class="hist-filters">
+      <button class="hf-chip active" onclick="setHF2('all',this)">Toutes données</button>
+      <button class="hf-chip" onclick="setHF2('prises',this)">Prises</button>
+      <button class="hf-chip" onclick="setHF2('sorties',this)">Sorties</button>
+    </div>
+    <div class="hist-list" id="hist-list"></div>
+  </div>
+  <div class="theme-bar">
+    <div></div>
+    <button class="theme-btn" onclick="toggleTheme()"><span class="ti-ic">☀️</span>&nbsp;<span class="ti-lb">Mode clair</span></button>
+  </div>
+</div>
+
+<!-- ══════════════ NOUVEAU ══════════════ -->
+<div class="page" id="page-nouveau">
+  <div class="nv-home-wrap" id="nv-home-wrap">
+    <div class="nv-home">
+      <h2>Nouvelle entrée</h2>
+      <div class="choice-cards">
+        <div class="cc" onclick="startWiz('prise')"><div class="cc-icon">🐟</div><h3>Prise</h3></div>
+        <div class="cc" onclick="startWiz('sortie')"><div class="cc-icon">🤿</div><h3>Sortie</h3></div>
+      </div>
+    </div>
+    <div class="theme-bar">
+      <div></div>
+    <button class="theme-btn" onclick="toggleTheme()"><span class="ti-ic">☀️</span>&nbsp;<span class="ti-lb">Mode clair</span></button>
+    </div>
+  </div>
+
+  <!-- WIZARD PRISE -->
+  <div class="wizard" id="wiz-prise">
+    <div class="wiz-hdr">
+      <button class="wiz-back" onclick="wBack('prise')">←</button>
+      <div class="wiz-title" id="wiz-prise-title">Nouvelle prise</div>
+      <div class="sdots"><div class="sdot cur" id="pd0"></div><div class="sdot" id="pd1"></div><div class="sdot" id="pd2"></div></div>
+    </div>
+    <div class="wiz-body">
+      <div class="wstep active" id="ps0">
+        <div class="shint">Clique sur la carte pour placer ta prise.</div>
+        <div style="display:flex;gap:5px;margin-bottom:7px;">
+          <button class="mls-btn active" id="pmls-std" onclick="setBaseLayer('std','prise')"><span class="mls-icon">🗺️</span>Standard</button>
+          <button class="mls-btn" id="pmls-sat" onclick="setBaseLayer('sat','prise')"><span class="mls-icon">🛰️</span>Satellite</button>
+        </div>
+        <div class="smap" id="prise-map"></div>
+        <div id="prise-pt"></div>
+        <div class="map-acts"><button class="bsm" onclick="clearPt()">Effacer le point</button></div>
+      </div>
+      <div class="wstep" id="ps1">
+        <div class="fsec">Espèce & taille</div>
+        <div class="fg f2">
+          <div class="fld"><label>Espèce *</label>
+            <select id="p-esp" onchange="toggleCustomEspece()"></select>
+          </div>
+          <div class="fld"><label>Taille (cm)</label><input type="number" id="p-tail" placeholder="ex : 48" min="1" max="300"></div>
+        </div>
+        <div class="fld" id="p-esp-custom-wrap" style="display:none;margin-top:8px">
+          <label>Préciser l'espèce</label>
+          <input type="text" id="p-esp-custom" placeholder="Nom de l'espèce...">
+        </div>
+        <div class="fsec">Technique</div>
+        <div class="ttech">
+          <div class="ttbtn" id="tb-p" onclick="selTech('peche')"><div class="ti">🎣</div><div class="tl">Pêche</div></div>
+          <div class="ttbtn" id="tb-c" onclick="selTech('chasse')"><div class="ti">🤿</div><div class="tl">Chasse sous-marine</div></div>
+        </div>
+        <div id="st-wrap" style="display:none;margin-top:11px">
+          <div class="fld">
+            <label>Méthode</label>
+            <select id="p-st" onchange="toggleCustomTech()"></select>
+          </div>
+          <div class="fld" id="p-st-custom-wrap" style="display:none;margin-top:8px">
+            <label>Préciser la technique</label>
+            <input type="text" id="p-st-custom" placeholder="Nom de la technique...">
+          </div>
+        </div>
+        <div id="rel-wrap" style="display:none;margin-top:11px">
+          <label style="font-size:11px;color:var(--text2);font-weight:500;display:block;margin-bottom:6px">Remise à l'eau</label>
+          <div class="rtog">
+            <button class="rbtn active" id="rb-g" onclick="selRel('gardee')">Gardée</button>
+            <button class="rbtn" id="rb-r" onclick="selRel('relachee')">Relâchée</button>
+          </div>
+        </div>
+      </div>
+      <div class="wstep" id="ps2">
+        <div class="fsec">Date & heure</div>
+        <div class="fg f2">
+          <div class="fld"><label>Date *</label><input type="date" id="p-date"></div>
+          <div class="fld"><label>Heure</label><input type="time" id="p-heure"></div>
+        </div>
+        <div class="fsec">Conditions</div>
+        <div class="fg f2">
+          <div class="fld" id="p-visi-wrap"><label>Visibilité (m)</label><input type="number" id="p-visi" placeholder="ex : 8" min="0" max="50"></div>
+          <div class="fld"><label>Marée</label>
+            <select id="p-maree">
+              <option value="sans">Sans marée</option><option value="montante">Montante</option>
+              <option value="etale-haute">Étale haute</option><option value="descendante">Descendante</option>
+              <option value="etale-basse">Étale basse</option>
+            </select>
+          </div>
+        </div>
+        <div class="fsec">Commentaire</div>
+        <div class="fld"><textarea id="p-com" placeholder="Notes, observations..."></textarea></div>
+      </div>
+    </div>
+    <div class="wiz-ftr">
+      <button class="btn btn-g" id="p-prev" onclick="wPrev('prise')" style="display:none">Précédent</button>
+      <button class="btn btn-p" id="p-next" onclick="wNext('prise')">Suivant →</button>
+    </div>
+  </div>
+
+  <!-- WIZARD SORTIE -->
+  <div class="wizard" id="wiz-sortie">
+    <div class="wiz-hdr">
+      <button class="wiz-back" onclick="wBack('sortie')">←</button>
+      <div class="wiz-title" id="wiz-sortie-title">Nouvelle sortie</div>
+      <div class="sdots"><div class="sdot cur" id="sd0"></div><div class="sdot" id="sd1"></div><div class="sdot" id="sd2"></div></div>
+    </div>
+    <div class="wiz-body">
+      <div class="wstep active" id="ss0">
+        <div class="shint">Clique sur la carte pour placer tes waypoints. Ils seront reliés dans l'ordre.</div>
+        <div style="display:flex;gap:5px;margin-bottom:7px;">
+          <button class="mls-btn active" id="smls-std" onclick="setBaseLayer('std','sortie')"><span class="mls-icon">🗺️</span>Standard</button>
+          <button class="mls-btn" id="smls-sat" onclick="setBaseLayer('sat','sortie')"><span class="mls-icon">🛰️</span>Satellite</button>
+        </div>
+        <div class="smap" id="sortie-map"></div>
+        <div class="wp-list" id="wp-list"></div>
+        <div class="map-acts" style="margin-top:8px">
+          <button class="bsm" onclick="undoWp()">← Annuler dernier</button>
+          <button class="bsm" onclick="clearWps()">Tout effacer</button>
+        </div>
+      </div>
+      <div class="wstep" id="ss1">
+        <div class="fsec">Type de sortie</div>
+        <div class="ttech">
+          <div class="ttbtn" id="stb-p" onclick="selST('peche')"><div class="ti">🎣</div><div class="tl">Pêche</div></div>
+          <div class="ttbtn" id="stb-c" onclick="selST('chasse')"><div class="ti">🤿</div><div class="tl">Chasse sous-marine</div></div>
+        </div>
+        <div id="s-st-wrap" style="display:none;margin-top:11px"><div class="fld"><label>Embarcation / Méthode</label><select id="s-st"></select></div></div>
+        <div class="fsec" style="margin-top:16px">Avec qui ?</div>
+        <div class="buds-list" id="s-buds-list"></div>
+        <div style="margin-top:8px;display:flex;gap:8px;align-items:center;" id="s-bud-custom-wrap">
+          <input type="text" id="s-bud-custom" placeholder="Ajouter un nom..." style="flex:1;padding:7px 10px;border:1px solid var(--border2);border-radius:var(--radius);font-size:12px;font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);outline:none;">
+          <button onclick="addCustomBud()" class="bsm" style="white-space:nowrap">+ Ajouter</button>
+        </div>
+      </div>
+      <div class="wstep" id="ss2">
+        <div class="fsec">Date & horaires</div>
+        <div class="fg f3">
+          <div class="fld"><label>Date *</label><input type="date" id="s-date"></div>
+          <div class="fld"><label>Départ</label><input type="time" id="s-dep"></div>
+          <div class="fld"><label>Retour</label><input type="time" id="s-ret"></div>
+        </div>
+        <div class="fsec">Conditions</div>
+        <div class="fg f2">
+          <div class="fld"><label>Marée</label>
+            <select id="s-maree">
+              <option value="sans">Sans marée</option><option value="montante">Montante</option>
+              <option value="etale-haute">Étale haute</option><option value="descendante">Descendante</option>
+              <option value="etale-basse">Étale basse</option>
+            </select>
+          </div>
+          <div class="fld"><label>Nombre de prises</label>
+            <select id="s-nb">${Array.from({length:26},(_,i)=>`<option>${i}</option>`).join('')}</select>
+          </div>
+        </div>
+        <div class="fld" id="s-visi-wrap" style="display:none;margin-top:11px">
+          <label>Visibilité (m)</label>
+          <input type="number" id="s-visi" placeholder="ex : 8" min="0" max="50">
+        </div>
+        <div class="fsec">Commentaire</div>
+        <div class="fld"><textarea id="s-com" placeholder="Résumé de la sortie..."></textarea></div>
+      </div>
+    </div>
+    <div class="wiz-ftr">
+      <button class="btn btn-g" id="s-prev" onclick="wPrev('sortie')" style="display:none">Précédent</button>
+      <button class="btn btn-p" id="s-next" onclick="wNext('sortie')">Suivant →</button>
+    </div>
+  </div>
+</div>
+
+</div><!-- /pages -->
+</div><!-- /app -->
+
+<!-- MODAL EDIT PRISE -->
+<div class="modal-bg" id="modal-prise">
+  <div class="modal">
+    <div class="modal-hdr"><div class="modal-ttl">Modifier la prise</div><button class="modal-x" onclick="closeModal('prise')">×</button></div>
+    <div class="fg f2">
+      <div class="fld"><label>Espèce *</label>
+        <select id="ep-esp" onchange="toggleEditCustomEspece()"></select>
+      </div>
+      <div class="fld"><label>Taille (cm)</label><input type="number" id="ep-tail" min="1" max="300"></div>
+    </div>
+    <div class="fld" id="ep-esp-custom-wrap" style="display:none;margin-top:8px">
+      <label>Préciser l'espèce</label>
+      <input type="text" id="ep-esp-custom" placeholder="Nom de l'espèce...">
+    </div>
+    <div style="margin-top:12px" class="fg f2">
+      <div class="fld"><label>Technique</label>
+        <select id="ep-tech" onchange="updEditST()">
+          <option value="">—</option><option value="peche">Pêche</option><option value="chasse">Chasse</option>
+        </select>
+      </div>
+      <div class="fld" id="ep-st-wrap"><label>Méthode</label><select id="ep-st"></select></div>
+    </div>
+    <div style="margin-top:12px" class="fg f2">
+      <div class="fld"><label>Date</label><input type="date" id="ep-date"></div>
+      <div class="fld"><label>Heure</label><input type="time" id="ep-heure"></div>
+    </div>
+    <div style="margin-top:12px" class="fg f2">
+      <div class="fld" id="ep-visi-wrap"><label>Visibilité (m)</label><input type="number" id="ep-visi" min="0" max="50"></div>
+      <div class="fld"><label>Marée</label>
+        <select id="ep-maree">
+          <option value="sans">Sans marée</option><option value="montante">Montante</option>
+          <option value="etale-haute">Étale haute</option><option value="descendante">Descendante</option>
+          <option value="etale-basse">Étale basse</option>
+        </select>
+      </div>
+    </div>
+    <div style="margin-top:12px" class="fld"><label>Commentaire</label><textarea class="modal-ta" id="ep-com"></textarea></div>
+    <div class="modal-ftr">
+      <button class="btn btn-g" onclick="closeModal('prise')">Annuler</button>
+      <button class="btn btn-ok" onclick="saveEditPrise()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EDIT SORTIE -->
+<div class="modal-bg" id="modal-sortie">
+  <div class="modal">
+    <div class="modal-hdr"><div class="modal-ttl">Modifier la sortie</div><button class="modal-x" onclick="closeModal('sortie')">×</button></div>
+    <div class="fg f3">
+      <div class="fld"><label>Date *</label><input type="date" id="es-date"></div>
+      <div class="fld"><label>Départ</label><input type="time" id="es-dep"></div>
+      <div class="fld"><label>Retour</label><input type="time" id="es-ret"></div>
+    </div>
+    <div style="margin-top:12px" class="fg f2">
+      <div class="fld"><label>Type</label>
+        <select id="es-tech" onchange="updEditSST()">
+          <option value="">—</option><option value="peche">Pêche</option><option value="chasse">Chasse</option>
+        </select>
+      </div>
+      <div class="fld"><label>Méthode</label><select id="es-st"></select></div>
+    </div>
+    <div style="margin-top:12px" class="fg f2">
+      <div class="fld"><label>Marée</label>
+        <select id="es-maree">
+          <option value="sans">Sans marée</option><option value="montante">Montante</option>
+          <option value="etale-haute">Étale haute</option><option value="descendante">Descendante</option>
+          <option value="etale-basse">Étale basse</option>
+        </select>
+      </div>
+      <div class="fld"><label>Nombre de prises</label>
+        <select id="es-nb">${Array.from({length:26},(_,i)=>`<option>${i}</option>`).join('')}</select>
+      </div>
+    </div>
+    <div style="margin-top:12px" class="fld"><label>Commentaire</label><textarea class="modal-ta" id="es-com"></textarea></div>
+    <div class="modal-ftr">
+      <button class="btn btn-g" onclick="closeModal('sortie')">Annuler</button>
+      <button class="btn btn-ok" onclick="saveEditSortie()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════ DATA ════════════════════════════
+let prises  = JSON.parse(localStorage.getItem('cdm_prises')  || '[]');
+let sorties = JSON.parse(localStorage.getItem('cdm_sorties') || '[]');
+let isDark  = localStorage.getItem('cdm_theme') === 'dark';
+
+const MOIS  = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+const CP = '#2e8a55', CC = '#2478b5';
+let customTechs = JSON.parse(localStorage.getItem('cdm_custom_techs') || '[]');
+const BASE_BUDS = ['Clément','Côme','Godefroy','Jérome','Lucie','Mathurin','Oncle Ludo','Papa','Tim','Vianney'];
+let customBuds = JSON.parse(localStorage.getItem('cdm_custom_buds') || '[]');
+let selectedBuds = new Set();
+function getAllBuds(){ return [...BASE_BUDS,...customBuds]; }
+function getSTP(){ return ['Leurre souple','Leurre dur','Surfcasting','Appât',...customTechs,'Autre']; }
+let customEspeces = JSON.parse(localStorage.getItem('cdm_custom_especes') || '[]');
+const BASE_ESPECES = ['Bar','Calamar','Chinchard','Denti','Dorade Grise','Dorade Royale','Lieu','Maquereau','Mostelle','Mulet','Oblade','Poulpe','Sar','Sar Tambour','Seiche','Sériole','Sole','Vieille'];
+function getEspeces(){ return [...BASE_ESPECES,...customEspeces,'Autre']; }
+function buildEspeceOptions(selectedVal=''){
+  return '<option value="">— Choisir —</option>'+getEspeces().map(e=>`<option${e===selectedVal?' selected':''}>${e}</option>`).join('');
+}
+const STC = ['Agachon','Coulée','Indienne'];
+const SORT_T = { peche:['Du bord','En bateau','En kayak'], chasse:['À la palme','En bateau'] };
+const PIE_P  = ['#2e8a55','#5db87a','#a8dbb8','#c5ecd5','#7ec89a'];
+const PIE_C  = ['#2478b5','#5aa8e0','#98ccf0','#bde0f8','#7bbee8'];
+
+let histFilter='all', hourlyFilter='all', monthlyYr='all';
+let editingPriseId=null, editingSortieId=null;
+
+// ════════════════════════════ THEME ════════════════════════════
+function applyTheme() {
+  document.documentElement.setAttribute('data-theme', isDark?'dark':'light');
+  const icon = isDark?'🌙':'☀️', lbl = isDark?'Mode sombre':'Mode clair';
+  document.querySelectorAll('.ti-ic').forEach(e=>e.textContent=icon);
+  document.querySelectorAll('.ti-lb').forEach(e=>e.textContent=lbl);
+  // Only re-apply tiles if current layer is 'std' (dark/light depends on theme)
+  ['main','prise','sortie'].forEach(which=>{
+    if(mapLayerState[which]==='std'){
+      const map=getMapInst(which);
+      if(map) applyTilesToMap(map,'std');
+    }
+  });
+}
+function toggleTheme(){ isDark=!isDark; localStorage.setItem('cdm_theme',isDark?'dark':'light'); applyTheme(); if(document.getElementById('page-stats').classList.contains('active')) renderStats(); }
+// ════════════════════════════ TILES ════════════════════════════
+// Per-map base layer state
+const mapLayerState = { main:'std', prise:'std', sortie:'std' };
+
+function getMapInst(which){
+  if(which==='main')   return mainMap;
+  if(which==='prise')  return priseMapInst;
+  if(which==='sortie') return wpMapInst;
+  return null;
+}
+
+function applyTilesToMap(map, layer){
+  if(!map) return;
+  // Remove all tile layers
+  map.eachLayer(l=>{ if(l._url !== undefined) map.removeLayer(l); });
+
+  if(layer==='std'){
+    // Standard — CartoDB clair ou sombre selon thème
+    const url = isDark
+      ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+      : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+    L.tileLayer(url,{attribution:'© CartoDB',maxZoom:19,subdomains:'abcd'}).addTo(map);
+
+  } else if(layer==='sat'){
+    // Satellite — Esri World Imagery + OpenSeaMap par-dessus
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+      {attribution:'© Esri World Imagery',maxZoom:19}).addTo(map);
+    L.tileLayer('https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png',
+      {attribution:'© OpenSeaMap',maxZoom:18,opacity:0.9}).addTo(map);
+
+  }
+}
+
+function addTiles(map){ applyTilesToMap(map, 'std'); }
+
+function setBaseLayer(layer, which){
+  mapLayerState[which] = layer;
+  const map = getMapInst(which);
+  if(!map) return;
+  applyTilesToMap(map, layer);
+  // Update button states
+  const prefixes = { main:'mls', prise:'pmls', sortie:'smls' };
+  const pfx = prefixes[which];
+  ['std','sat'].forEach(l=>{
+    const btn=document.getElementById(pfx+'-'+l);
+    if(btn) btn.classList.toggle('active', l===layer);
+  });
+}
+
+// ════════════════════════════ TABS ════════════════════════════
+function showTab(id,idx){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  document.querySelectorAll('.tab')[idx].classList.add('active');
+  document.getElementById('tab-ind').style.left=(idx*25)+'%';
+  document.getElementById('tab-ind').style.width='25%';
+  if(id==='carto'){
+    // Use two-step approach: show page first, then init map after layout is done
+    requestAnimationFrame(()=>{
+      requestAnimationFrame(()=>{
+        initMainMap();
+        if(mainMap){ mainMap.invalidateSize(); renderMapLayers(); }
+      });
+    });
+  }
+  if(id==='stats')      renderStats();
+  if(id==='historique') renderHist();
+  if(id==='nouveau')    showNvHome();
+}
+
+// ════════════════════════════ MAIN MAP ════════════════════════════
+let mainMap=null, lyrP=null, lyrS=null, mapView='prises';
+let allPolylines=[], selectedPoly=null;
+
+function initMainMap(){
+  if(mainMap){ mainMap.invalidateSize(); return; }
+  const el=document.getElementById('map');
+  if(el.offsetHeight < 10){ setTimeout(initMainMap,50); return; }
+  mainMap=L.map(el,{zoomControl:true}).setView([46.5,2.5],6);
+  addTiles(mainMap);
+  lyrP=L.markerClusterGroup({
+    maxClusterRadius:60,
+    iconCreateFunction: function(cluster){
+      const n=cluster.getChildCount();
+      // Taille selon nombre de prises
+      const sz = n>=50?44 : n>=20?38 : n>=10?34 : n>=5?30 : 26;
+      const fs = n>=50?13 : n>=10?12 : 11;
+      return L.divIcon({
+        html:`<div style="
+          width:${sz}px;height:${sz}px;
+          background:white;
+          border-radius:50%;
+          border:2.5px solid #888;
+          display:flex;align-items:center;justify-content:center;
+          font-size:${fs}px;font-weight:700;color:#222;
+          font-family:'DM Sans',sans-serif;
+          box-shadow:0 2px 8px rgba(0,0,0,0.25);
+        ">${n}</div>`,
+        className:'',
+        iconSize:L.point(sz,sz),
+        iconAnchor:L.point(sz/2,sz/2)
+      });
+    },
+    spiderfyOnMaxZoom:true,
+    showCoverageOnHover:false,
+    zoomToBoundsOnClick:true,
+  }).addTo(mainMap);
+  lyrS=L.layerGroup();
+  // Click on map background deselects
+  mainMap.on('click', ()=>{ if(selectedPoly){ deselectAll(); selectedPoly=null; } });
+  renderMapLayers();
+}
+
+function deselectAll(){
+  allPolylines.forEach(obj=>{
+    obj.poly.setStyle({opacity:0.85, weight:3.5});
+    if(obj.arrows){ obj.arrows.forEach(a=>lyrS.removeLayer(a)); obj.arrows=[]; }
+  });
+}
+
+function renderMapLayers(){
+  if(!mainMap)return;
+  lyrP.clearLayers(); lyrS.clearLayers();
+  allPolylines=[];
+
+  // PRISES — points
+  prises.forEach(p=>{
+    if(!p.lat||!p.lon)return;
+    const col=p.technique==='chasse'?CC:CP;
+    const m=L.circleMarker([p.lat,p.lon],{radius:9,fillColor:col,color:'white',weight:2.5,fillOpacity:0.92});
+    m._cdmTech=p.technique==='chasse'?'chasse':'peche';
+    const d=p.date?new Date(p.date+'T12:00:00').toLocaleDateString('fr-FR'):'';
+    m.bindPopup(`<b>${p.espece}</b><br>${p.taille?p.taille+' cm · ':''}${p.technique==='chasse'?'Chasse':'Pêche'}${p.soustech?' — '+p.soustech:''}<br><small>${d}${p.heure?' · '+p.heure:''}${p.relache==='oui'?' · Relâchée':''}</small>${p.comment?'<br><i style="font-size:11px">'+p.comment+'</i>':''}`);
+    lyrP.addLayer(m);
+  });
+
+  // SORTIES — traits uniquement, clic = highlight + flèches directionnelles + popup
+  sorties.forEach(s=>{
+    if(!s.waypoints||s.waypoints.length<2)return;
+    const col=s.technique==='chasse'?CC:CP;
+    const wps=s.waypoints;
+    const d=s.date?new Date(s.date+'T12:00:00').toLocaleDateString('fr-FR'):'';
+    const horaires=s.dep&&s.ret?`${s.dep} → ${s.ret}`:s.dep?`Départ : ${s.dep}`:'';
+    const popupHtml=`<b>${s.technique==='chasse'?'Chasse':'Pêche'}${s.soustech?' — '+s.soustech:''}</b><br><small>${d}${horaires?' · '+horaires:''}</small>${s.nbPrises&&s.nbPrises!='0'?'<br><small>'+s.nbPrises+' prise(s)</small>':''}${s.comment?'<br><i style="font-size:11px">'+s.comment+'</i>':''}`;
+
+    const poly=L.polyline(wps,{color:col,weight:3.5,opacity:0.85});
+    let arrowLayers=[];
+
+    const addArrows=()=>{
+      arrowLayers.forEach(a=>lyrS.removeLayer(a)); arrowLayers=[];
+      // Place a small SVG arrow marker at midpoint of each segment
+      for(let i=0;i<wps.length-1;i++){
+        const p1=wps[i], p2=wps[i+1];
+        const midLat=(p1[0]+p2[0])/2, midLon=(p1[1]+p2[1])/2;
+        const dLat=p2[0]-p1[0], dLon=p2[1]-p1[1];
+        const angle=Math.atan2(dLon,dLat)*180/Math.PI;
+        const arrowIcon=L.divIcon({
+          html:`<svg width="24" height="24" viewBox="-10 -10 20 20" style="transform:rotate(${angle}deg);filter:drop-shadow(0 1px 2px rgba(0,0,0,0.4))"><polygon points="0,-8 5,4 0,1 -5,4" fill="${col}" opacity="1" stroke="white" stroke-width="1"/></svg>`,
+          className:'',iconSize:[24,24],iconAnchor:[12,12]
+        });
+        const m=L.marker([midLat,midLon],{icon:arrowIcon,interactive:false});
+        arrowLayers.push(m);
+        lyrS.addLayer(m);
+      }
+    };
+
+    const removeArrows=()=>{ arrowLayers.forEach(a=>lyrS.removeLayer(a)); arrowLayers=[]; };
+
+    const highlight=()=>{
+      deselectAll();
+      selectedPoly=poly;
+      allPolylines.forEach(obj=>{
+        const isThis=(obj.poly===poly);
+        obj.poly.setStyle({opacity:isThis?1:0.12, weight:isThis?5:2});
+        if(isThis){ addArrows(); obj.arrows=arrowLayers; }
+      });
+      poly.openPopup(L.latLng(wps[Math.floor(wps.length/2)]));
+    };
+
+    poly.bindPopup(popupHtml);
+    poly.on('click', e=>{ L.DomEvent.stopPropagation(e); highlight(); });
+
+    const obj={poly,arrows:[]};
+    allPolylines.push(obj);
+    lyrS.addLayer(poly);
+  });
+
+  setMapView(mapView,true);
+}
+
+function setMapView(v,silent){
+  mapView=v;
+  if(!mainMap)return;
+  selectedPoly=null; deselectAll();
+  document.getElementById('tog-prises').classList.toggle('active',v==='prises');
+  document.getElementById('tog-sorties').classList.toggle('active',v==='sorties');
+  document.getElementById('tog-tout').classList.toggle('active',v==='tout');
+  document.getElementById('leg-prises').style.display=v==='prises'?'block':'none';
+  document.getElementById('leg-sorties').style.display=v==='sorties'?'block':'none';
+  document.getElementById('leg-tout').style.display=v==='tout'?'block':'none';
+  if(v==='prises'){lyrS.remove();lyrP.addTo(mainMap);}
+  else if(v==='sorties'){lyrP.remove();lyrS.addTo(mainMap);}
+  else{lyrP.addTo(mainMap);lyrS.addTo(mainMap);}
+}
+
+// ════════════════════════════ STATS ════════════════════════════
+function renderStats(){
+  const tot=prises.length;
+  const ch=prises.filter(p=>p.technique==='chasse').length;
+  const pe=prises.filter(p=>p.technique==='peche').length;
+  const rel=prises.filter(p=>p.relache==='oui').length;
+  const ns=sorties.length;
+  const moy=ns?(tot/ns).toFixed(1):'0';
+
+  document.getElementById('kpi-grid').innerHTML=`
+    <div class="kpi"><div class="kpi-val">${tot}</div><div class="kpi-lbl">Prises</div></div>
+    <div class="kpi"><div class="kpi-val">${ns}</div><div class="kpi-lbl">Sorties</div></div>
+    <div class="kpi"><div class="kpi-val">${moy}</div><div class="kpi-lbl">Prises par sortie</div></div>
+    <div class="kpi"><div class="kpi-val">${new Set(prises.map(p=>p.espece).filter(Boolean)).size}</div><div class="kpi-lbl">Espèces</div></div>
+    <div class="kpi"><div class="kpi-val">${tot?Math.round(rel/tot*100):0}<span style="font-size:18px">%</span></div><div class="kpi-lbl">Catch &amp; Release</div></div>
+    <div class="kpi"><div class="kpi-val small">${tot?Math.round(ch/tot*100):0}%&thinsp;/&thinsp;${tot?Math.round(pe/tot*100):0}%</div><div class="kpi-lbl">Chasse / Pêche</div></div>`;
+
+  // Records
+  const recs={};
+  prises.forEach(p=>{if(p.taille){const t=parseFloat(p.taille);if(!recs[p.espece]||t>recs[p.espece].t)recs[p.espece]={t,date:p.date,tech:p.technique,st:p.soustech};}});
+  const ra=Object.entries(recs).sort((a,b)=>b[1].t-a[1].t);
+  document.getElementById('rec-body').innerHTML=ra.length?ra.map(([e,r])=>{
+    const d=r.date?new Date(r.date+'T12:00:00').toLocaleDateString('fr-FR'):'—';
+    const cls=r.tech==='chasse'?'bc':'bp'; const lbl=r.tech==='chasse'?'Chasse':'Pêche';
+    return `<tr><td>${e}</td><td><span class="rec-sz">${r.t} cm</span></td><td style="color:var(--text2);font-size:11px">${d}</td><td><span class="btech ${cls}">${lbl}${r.st?' — '+r.st:''}</span></td></tr>`;
+  }).join(''):'<tr><td colspan="4" style="color:var(--text3);font-size:12px;padding:12px 0">Aucune taille enregistrée</td></tr>';
+
+  // Species — new layout: name + count (C&R%) then bicolor bar
+  const bsByEsp={};
+  prises.forEach(p=>{
+    if(!bsByEsp[p.espece]) bsByEsp[p.espece]={total:0,peche:0,chasse:0,rel:0};
+    bsByEsp[p.espece].total++;
+    if(p.technique==='peche') bsByEsp[p.espece].peche++;
+    else if(p.technique==='chasse') bsByEsp[p.espece].chasse++;
+    if(p.relache==='oui') bsByEsp[p.espece].rel++;
+  });
+  const bsaEsp=Object.entries(bsByEsp).sort((a,b)=>b[1].total-a[1].total);
+  const mxEsp=bsaEsp[0]?.[1].total||1;
+  document.getElementById('sp-block').innerHTML=bsaEsp.length?bsaEsp.map(([e,d])=>{
+    const pctRel=d.total?Math.round(d.rel/d.total*100):0;
+    const pctPeche=d.total?Math.round(d.peche/d.total*100):0;
+    const pctChasse=d.total?Math.round(d.chasse/d.total*100):0;
+    const barW=Math.round(d.total/mxEsp*100);
+    return `<div class="sp-row">
+      <div class="sp-header">
+        <span class="sp-name">${e}</span>
+        <span class="sp-meta">${d.total} ${pctRel>0?'('+pctRel+'% relâchés)':''}</span>
+      </div>
+      <div class="sp-bar-wrap" style="width:${barW}%">
+        <div class="sp-bar-peche" style="width:${pctPeche}%"></div>
+        <div class="sp-bar-chasse" style="width:${pctChasse}%"></div>
+      </div>
+    </div>`;
+  }).join(''):'<div style="color:var(--text3);font-size:12px;padding:6px 0">Aucune donnée</div>';
+
+  // Tech bars
+  renderTechBars('tech-bars-peche','tech-nodata-peche','tech-total-peche', prises.filter(p=>p.technique==='peche'),  'var(--green)');
+  renderTechBars('tech-bars-chasse','tech-nodata-chasse','tech-total-chasse',prises.filter(p=>p.technique==='chasse'),'var(--sky)');
+
+  renderHourly();
+  populateYearSelector();
+  renderMonthly();
+  renderBudRanking();
+}
+
+function populateYearSelector(){
+  const yrs=new Set();
+  prises.forEach(p=>{if(p.date)yrs.add(p.date.substring(0,4));});
+  const sel=document.getElementById('month-yr-sel');
+  if(!sel)return;
+  const cur=sel.value||'all';
+  sel.innerHTML='<option value="all">Toutes périodes</option>'+
+    [...yrs].sort((a,b)=>b-a).map(y=>`<option value="${y}">${y}</option>`).join('');
+  sel.value=yrs.has(cur)?cur:'all';
+}
+
+function renderMonthly(){
+  const sel=document.getElementById('month-yr-sel');
+  const yr=sel?sel.value:'all';
+  const BARH=120;
+  // Build per-month peche/chasse counts
+  const moPe=Array(12).fill(0), moCh=Array(12).fill(0);
+  prises.forEach(p=>{
+    if(!p.date)return;
+    if(yr!=='all'&&!p.date.startsWith(yr))return;
+    const m=parseInt(p.date.split('-')[1])-1;
+    if(p.technique==='chasse')moCh[m]++;
+    else moPe[m]++;
+  });
+  const moTot=moPe.map((v,i)=>v+moCh[i]);
+  const maxM=Math.max(...moTot,1);
+  const total=moTot.reduce((a,b)=>a+b,0);
+  const totalEl=document.getElementById('monthly-total');
+  if(totalEl)totalEl.textContent=total+' prise'+(total!==1?'s':'')+' sur la période';
+  document.getElementById('mgrid').innerHTML=moTot.map((n,i)=>{
+    const h=n===0?3:Math.max(8,Math.round(n/maxM*BARH));
+    const hPe=n===0?0:Math.round(moPe[i]/n*h);
+    const hCh=n===0?0:h-hPe;
+    return `<div class="mcol" style="cursor:${n>0?'pointer':'default'}" onclick="${n>0?'showMonthDetail('+i+',\''+yr+'\')':''}">
+      <div class="mn ${n===0?'z':''}">${n||''}</div>
+      <div class="mbar-w" style="height:${BARH}px;align-items:flex-end;">
+        ${n===0
+          ? `<div style="width:100%;height:3px;background:var(--bg3);border-radius:3px 3px 0 0"></div>`
+          : `<div class="mbar-stack">
+              <div class="mbar-stack-peche" style="height:${hPe}px;display:flex;align-items:center;justify-content:center">${moPe[i]>0&&hPe>=14?`<span style="font-size:9px;color:white;font-weight:700">${moPe[i]}</span>`:''}</div>
+              <div class="mbar-stack-chasse" style="height:${hCh}px;display:flex;align-items:center;justify-content:center">${moCh[i]>0&&hCh>=14?`<span style="font-size:9px;color:white;font-weight:700">${moCh[i]}</span>`:''}</div>
+            </div>`}
+      </div>
+      <div class="mlbl">${MOIS[i]}</div>
+    </div>`;
+  }).join('');
+}
+
+function showMonthDetail(monthIdx, yr){
+  const MOIS_LONG=['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+  const detail=document.getElementById('monthly-detail');
+  const title=document.getElementById('monthly-detail-title');
+  const list=document.getElementById('monthly-detail-list');
+  const sel=document.getElementById('month-yr-sel');
+  const curYr=sel?sel.value:'all';
+  // Filter prises for this month
+  let filtered=prises.filter(p=>{
+    if(!p.date)return false;
+    if(curYr!=='all'&&!p.date.startsWith(curYr))return false;
+    return parseInt(p.date.split('-')[1])-1===monthIdx;
+  });
+  // Group by espece
+  const byEsp={};
+  filtered.forEach(p=>{
+    if(!byEsp[p.espece])byEsp[p.espece]={peche:0,chasse:0};
+    if(p.technique==='chasse')byEsp[p.espece].chasse++;
+    else byEsp[p.espece].peche++;
+  });
+  const entries=Object.entries(byEsp).sort((a,b)=>(b[1].peche+b[1].chasse)-(a[1].peche+a[1].chasse));
+  title.textContent=MOIS_LONG[monthIdx]+(curYr!=='all'?' '+curYr:'');
+  list.innerHTML=entries.map(([esp,d])=>{
+    const tot=d.peche+d.chasse;
+    const tags=[];
+    if(d.peche)tags.push(`<span style="color:var(--green)">${d.peche} pêche</span>`);
+    if(d.chasse)tags.push(`<span style="color:var(--sky)">${d.chasse} chasse</span>`);
+    return `<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);">
+      <span style="font-weight:500;color:var(--text)">${esp}</span>
+      <span>${tags.join(' · ')} <span style="font-weight:700;color:var(--text)">(${tot})</span></span>
+    </div>`;
+  }).join('');
+  detail.style.display='block';
+}
+
+function renderTechBars(barId, noDataId, totalId, data, color){
+  const barEl=document.getElementById(barId);
+  const ndEl=document.getElementById(noDataId);
+  const totEl=document.getElementById(totalId);
+  if(!data.length){
+    barEl.innerHTML=''; ndEl.style.display='block';
+    if(totEl) totEl.textContent='';
+    return;
+  }
+  ndEl.style.display='none';
+  if(totEl) totEl.textContent='('+data.length+' au total)';
+  const counts={};
+  data.forEach(p=>{ const k=p.soustech||'Non précisé'; counts[k]=(counts[k]||0)+1; });
+  const entries=Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+  const mx=entries[0]?.[1]||1;
+  const BARH=80;
+  barEl.innerHTML=`<div style="display:flex;align-items:flex-end;gap:8px;height:${BARH+36}px;max-width:500px;">
+    ${entries.map(([k,n])=>{
+      const h=Math.max(8,Math.round(n/mx*BARH));
+      return `<div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1;min-width:40px;">
+        <span style="font-size:10px;font-weight:700;color:var(--text)">${n}</span>
+        <div style="width:100%;height:${h}px;background:${color};border-radius:4px 4px 0 0;transition:height .5s;"></div>
+        <span style="font-size:10px;color:var(--text2);text-align:center;line-height:1.2;word-break:break-word;">${k}</span>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+function drawPie(cid,lid,data,field,colors){
+  const canvas=document.getElementById(cid);
+  const legEl=document.getElementById(lid);
+  const ctx=canvas.getContext('2d');
+  ctx.clearRect(0,0,130,130);
+  if(!data.length){
+    ctx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--text3').trim()||'#aaa';
+    ctx.font='11px DM Sans';ctx.textAlign='center';ctx.fillText('Aucune donnée',65,65);
+    legEl.innerHTML='';return;
+  }
+  const counts={};
+  data.forEach(p=>{const k=p[field]||'Non précisé';counts[k]=(counts[k]||0)+1;});
+  const entries=Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+  const total=entries.reduce((s,[,n])=>s+n,0);
+  let ang=-Math.PI/2;
+  const cx=65,cy=65,r=58,ri=26;
+  entries.forEach(([,val],i)=>{
+    const sl=(val/total)*2*Math.PI;
+    ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,ang,ang+sl);ctx.closePath();
+    ctx.fillStyle=colors[i%colors.length];ctx.fill();
+    ang+=sl;
+  });
+  // Transparent hole — use surface color
+  const holeColor = isDark ? '#1c2128' : '#faf8f3';
+  ctx.beginPath();ctx.arc(cx,cy,ri,0,2*Math.PI);
+  ctx.fillStyle=holeColor;ctx.fill();
+
+  legEl.innerHTML=entries.map(([k,v],i)=>
+    `<div class="pie-leg-row"><div class="pie-leg-dot" style="background:${colors[i%colors.length]}"></div><span>${k} <span style="color:var(--text3)">(${v})</span></span></div>`
+  ).join('');
+}
+
+function setHF(f,el){
+  hourlyFilter=f;
+  document.querySelectorAll('.hchip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  const lbls={all:'toutes prises',peche:'pêche uniquement',chasse:'chasse uniquement'};
+  document.getElementById('hfilt-lbl').textContent=lbls[f];
+  renderHourly();
+}
+
+function renderHourly(){
+  const slotsPe=Array(24).fill(0), slotsCh=Array(24).fill(0);
+  let list=[...prises];
+  if(hourlyFilter==='peche')  list=list.filter(p=>p.technique==='peche');
+  if(hourlyFilter==='chasse') list=list.filter(p=>p.technique==='chasse');
+  list.forEach(p=>{
+    if(!p.heure)return;
+    const h=parseInt(p.heure.split(':')[0]);
+    if(h<0||h>=24)return;
+    if(p.technique==='chasse')slotsCh[h]++;
+    else slotsPe[h]++;
+  });
+  const slots=slotsPe.map((v,i)=>v+slotsCh[i]);
+  const maxH=Math.max(...slots,1);
+  const barH=100;
+  document.getElementById('hchart').innerHTML=slots.map((n,i)=>{
+    const h=Math.max(n===0?3:8,Math.round(n/maxH*barH));
+    const hPe=n===0?0:Math.round(slotsPe[i]/n*h);
+    const hCh=n===0?0:h-hPe;
+    const lblPe=slotsPe[i]>0&&hPe>=12?`<span style="font-size:8px;color:white;font-weight:700;line-height:1">${slotsPe[i]}</span>`:'';
+    const lblCh=slotsCh[i]>0&&hCh>=12?`<span style="font-size:8px;color:white;font-weight:700;line-height:1">${slotsCh[i]}</span>`:'';
+    return `<div class="hbw">
+      ${n>0?`<div style="font-size:9px;font-weight:900;color:var(--text);margin-bottom:1px">${n}</div>`:''}
+      ${n===0
+        ? `<div class="hb zero" style="height:3px"></div>`
+        : `<div class="hb-stack" style="height:${h}px">
+            <div class="hb-stack-peche" style="height:${hPe}px;display:flex;align-items:center;justify-content:center">${lblPe}</div>
+            <div class="hb-stack-chasse" style="height:${hCh}px;display:flex;align-items:center;justify-content:center">${lblCh}</div>
+          </div>`}
+      <div class="hlbl">${i}h</div>
+    </div>`;
+  }).join('');
+}
+
+// ════════════════════════════ HISTORIQUE ════════════════════════════
+function setHF2(f,el){histFilter=f;document.querySelectorAll('.hf-chip').forEach(c=>c.classList.remove('active'));el.classList.add('active');renderHist();}
+
+function renderHist(){
+  let items=[];
+  if(histFilter!=='sorties') prises.forEach(p=>items.push({...p,_type:'prise'}));
+  if(histFilter!=='prises')  sorties.forEach(s=>items.push({...s,_type:'sortie'}));
+  items.sort((a,b)=>{
+    const da=a.date||'0000-00-00', db=b.date||'0000-00-00';
+    if(db!==da)return db.localeCompare(da);
+    return (b.id||0)-(a.id||0);
+  });
+  const el=document.getElementById('hist-list');
+  if(!items.length){el.innerHTML='<div class="hist-empty">Aucune entrée enregistrée.</div>';return;}
+  el.innerHTML=items.map(item=>{
+    const d=item.date?new Date(item.date+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'}):'—';
+    if(item._type==='prise'){
+      const tl=item.technique==='chasse'?'Chasse':item.technique==='peche'?'Pêche':'—';
+      const meta=[tl,item.soustech,item.taille?item.taille+' cm':null].filter(Boolean).join(' · ');
+      return `<div class="hist-card">
+        <div class="hist-icon hi-prise">🐟</div>
+        <div class="hist-info"><div class="hist-title">${item.espece}</div><div class="hist-meta">${meta}</div></div>
+        <div class="hist-date">${d}</div>
+        <div class="hist-actions">
+          <button class="hact-btn" onclick="openEditPrise(${item.id})">✏️ Modifier</button>
+          <button class="hact-btn del" onclick="delPrise(${item.id})">🗑 Supprimer</button>
+        </div>
+      </div>`;
+    } else {
+      const tl=item.technique==='chasse'?'Chasse':item.technique==='peche'?'Pêche':'—';
+      const meta=[tl,item.soustech,item.nbPrises!==undefined?item.nbPrises+' prise(s)':null,item.lieu||null,item.buds&&item.buds.length?'Avec '+item.buds.join(', '):null].filter(Boolean).join(' · ');
+      return `<div class="hist-card">
+        <div class="hist-icon hi-sortie">⚓</div>
+        <div class="hist-info"><div class="hist-title">Sortie${item.lieu?' — '+item.lieu:''}</div><div class="hist-meta">${meta}</div></div>
+        <div class="hist-date">${d}</div>
+        <div class="hist-actions">
+          <button class="hact-btn" onclick="openEditSortie(${item.id})">✏️ Modifier</button>
+          <button class="hact-btn del" onclick="delSortie(${item.id})">🗑 Supprimer</button>
+        </div>
+      </div>`;
+    }
+  }).join('');
+}
+
+function delPrise(id){if(!confirm('Supprimer cette prise ?'))return;prises=prises.filter(p=>p.id!==id);localStorage.setItem('cdm_prises',JSON.stringify(prises));renderHist();renderMapLayers();patchDriveSave();}
+function delSortie(id){if(!confirm('Supprimer cette sortie ?'))return;sorties=sorties.filter(s=>s.id!==id);localStorage.setItem('cdm_sorties',JSON.stringify(sorties));renderHist();renderMapLayers();patchDriveSave();}
+
+function openEditPrise(id){
+  const p=prises.find(x=>x.id===id);if(!p)return;
+  editingPriseId=id;
+  initEspeceSelects();
+  // If saved espece is custom (not in base list), select Autre and prefill
+  const isCustomEsp=p.espece&&!BASE_ESPECES.includes(p.espece)&&p.espece!=='Autre';
+  if(isCustomEsp){
+    document.getElementById('ep-esp').value='Autre';
+    const cw=document.getElementById('ep-esp-custom-wrap');
+    const ci=document.getElementById('ep-esp-custom');
+    if(cw) cw.style.display='block';
+    if(ci) ci.value=p.espece;
+  } else {
+    document.getElementById('ep-esp').value=p.espece||'';
+  }
+  document.getElementById('ep-tail').value=p.taille||'';
+  document.getElementById('ep-tech').value=p.technique||'';
+  document.getElementById('ep-date').value=p.date||'';
+  document.getElementById('ep-visi').value=p.visi||'';
+  document.getElementById('ep-heure').value=p.heure||'';
+  document.getElementById('ep-maree').value=p.maree||'sans';
+  document.getElementById('ep-com').value=p.comment||'';
+  const vw=document.getElementById('ep-visi-wrap');
+  if(vw) vw.style.display=p.technique==='chasse'?'block':'none';
+  updEditST();
+  setTimeout(()=>{document.getElementById('ep-st').value=p.soustech||'';},30);
+  document.getElementById('modal-prise').classList.add('open');
+}
+function updEditST(){
+  const t=document.getElementById('ep-tech').value;
+  const opts=t==='chasse'?STC:t==='peche'?getSTP():[];
+  document.getElementById('ep-st').innerHTML=opts.map(v=>`<option>${v}</option>`).join('');
+  document.getElementById('ep-st-wrap').style.display=opts.length?'block':'none';
+  const vw=document.getElementById('ep-visi-wrap');
+  if(vw) vw.style.display=t==='chasse'?'block':'none';
+}
+function saveEditPrise(){
+  const idx=prises.findIndex(p=>p.id===editingPriseId);if(idx===-1)return;
+  prises[idx]={...prises[idx],
+    espece:(()=>{
+      const v=document.getElementById('ep-esp').value;
+      if(v==='Autre'){
+        const custom=document.getElementById('ep-esp-custom')?.value?.trim();
+        if(custom) return saveCustomEspece(custom)||'Autre';
+      }
+      return v;
+    })(),
+    taille:document.getElementById('ep-tail').value||null,
+    technique:document.getElementById('ep-tech').value||null,
+    soustech:document.getElementById('ep-st').value||null,
+    date:document.getElementById('ep-date').value||prises[idx].date,
+    visi:document.getElementById('ep-visi').value||null,
+    heure:document.getElementById('ep-heure').value||null,
+    maree:document.getElementById('ep-maree').value,
+    comment:document.getElementById('ep-com').value.trim()||null,
+  };
+  localStorage.setItem('cdm_prises',JSON.stringify(prises));
+  closeModal('prise');renderHist();renderMapLayers();toast('Prise mise à jour ✓');
+  patchDriveSave();
+}
+
+function openEditSortie(id){
+  const s=sorties.find(x=>x.id===id);if(!s)return;
+  editingSortieId=id;
+  document.getElementById('es-date').value=s.date||'';
+  document.getElementById('es-dep').value=s.dep||'';
+  document.getElementById('es-ret').value=s.ret||'';
+  document.getElementById('es-tech').value=s.technique||'';
+  document.getElementById('es-maree').value=s.maree||'sans';
+  document.getElementById('es-nb').value=s.nbPrises||'0';
+  document.getElementById('es-com').value=s.comment||'';
+  updEditSST();
+  setTimeout(()=>{document.getElementById('es-st').value=s.soustech||'';},30);
+  document.getElementById('modal-sortie').classList.add('open');
+}
+function updEditSST(){
+  const t=document.getElementById('es-tech').value;
+  const opts=SORT_T[t]||[];
+  document.getElementById('es-st').innerHTML=opts.map(v=>`<option>${v}</option>`).join('');
+}
+function saveEditSortie(){
+  const idx=sorties.findIndex(s=>s.id===editingSortieId);if(idx===-1)return;
+  sorties[idx]={...sorties[idx],
+    date:document.getElementById('es-date').value,
+    dep:document.getElementById('es-dep').value,
+    ret:document.getElementById('es-ret').value,
+    technique:document.getElementById('es-tech').value||null,
+    soustech:document.getElementById('es-st').value||null,
+    maree:document.getElementById('es-maree').value,
+    nbPrises:document.getElementById('es-nb').value,
+    comment:document.getElementById('es-com').value.trim()||null,
+  };
+  localStorage.setItem('cdm_sorties',JSON.stringify(sorties));
+  closeModal('sortie');renderHist();renderMapLayers();toast('Sortie mise à jour ✓');
+  patchDriveSave();
+}
+
+function closeModal(t){document.getElementById('modal-'+t).classList.remove('open');}
+document.getElementById('modal-prise').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal('prise');});
+document.getElementById('modal-sortie').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal('sortie');});
+
+// ════════════════════════════ WIZARD ════════════════════════════
+let pStep=0,sStep=0,selTP=null,selRP='gardee',selTS=null;
+let prisePoint=null,priseMapInst=null,priseMarker=null;
+let wpMapInst=null,wps=[],wpMks=[],wpPoly=null;
+
+function showNvHome(){
+  document.getElementById('nv-home-wrap').style.display='flex';
+  document.getElementById('nv-home-wrap').style.flexDirection='column';
+  document.getElementById('wiz-prise').classList.remove('active');
+  document.getElementById('wiz-sortie').classList.remove('active');
+}
+
+function initEspeceSelects(){
+  const s1=document.getElementById('p-esp');
+  if(s1) s1.innerHTML=buildEspeceOptions();
+  const s2=document.getElementById('ep-esp');
+  if(s2) s2.innerHTML=buildEspeceOptions();
+}
+
+function toggleCustomEspece(){
+  const v=document.getElementById('p-esp').value;
+  document.getElementById('p-esp-custom-wrap').style.display=v==='Autre'?'block':'none';
+  if(v!=='Autre'){const el=document.getElementById('p-esp-custom');if(el)el.value='';}
+}
+function toggleEditCustomEspece(){
+  const v=document.getElementById('ep-esp').value;
+  document.getElementById('ep-esp-custom-wrap').style.display=v==='Autre'?'block':'none';
+  if(v!=='Autre'){const el=document.getElementById('ep-esp-custom');if(el)el.value='';}
+}
+
+function renderBudsList(){
+  const el=document.getElementById('s-buds-list');
+  if(!el)return;
+  el.innerHTML=getAllBuds().map(name=>{
+    const checked=selectedBuds.has(name);
+    return `<div class="bud-item${checked?' checked':''}" onclick="toggleBud('${name.replace(/'/g,"\'")}',this)">
+      <div class="bud-check">${checked?'<svg width="10" height="8" viewBox="0 0 10 8"><polyline points="1,4 4,7 9,1" stroke="white" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg>':''}</div>
+      <span class="bud-name">${name}</span>
+    </div>`;
+  }).join('');
+}
+
+function toggleBud(name, el){
+  if(selectedBuds.has(name)) selectedBuds.delete(name);
+  else selectedBuds.add(name);
+  renderBudsList();
+}
+
+function addCustomBud(){
+  const inp=document.getElementById('s-bud-custom');
+  const val=inp.value.trim();
+  if(!val)return;
+  if(!BASE_BUDS.includes(val)&&!customBuds.includes(val)){
+    customBuds.push(val);
+    localStorage.setItem('cdm_custom_buds',JSON.stringify(customBuds));
+  }
+  selectedBuds.add(val);
+  inp.value='';
+  renderBudsList();
+}
+
+function renderBudRanking(){
+  const el=document.getElementById('bud-ranking');
+  if(!el)return;
+  const counts={};
+  sorties.forEach(s=>{
+    if(!s.buds||!s.buds.length)return;
+    s.buds.forEach(b=>{ counts[b]=(counts[b]||0)+1; });
+  });
+  const ranked=Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+  if(!ranked.length){
+    el.innerHTML='<div style="color:var(--text3);font-size:12px;font-style:italic">Aucune sortie avec des compagnons enregistrés.</div>';
+    return;
+  }
+  el.innerHTML=ranked.map(([name,n],i)=>
+    `<div class="bud-rank-row">
+      <div class="bud-rank-num">${i+1}</div>
+      <div class="bud-rank-name">${name}</div>
+      <div><span class="bud-rank-count">${n}</span><span class="bud-rank-lbl">sortie${n>1?'s':''}</span></div>
+    </div>`
+  ).join('');
+}
+
+function saveCustomEspece(raw){
+  if(!raw)return null;
+  const val=raw.trim();
+  if(!val)return null;
+  if(!BASE_ESPECES.includes(val)&&!customEspeces.includes(val)){
+    customEspeces.push(val);
+    localStorage.setItem('cdm_custom_especes',JSON.stringify(customEspeces));
+    initEspeceSelects();
+  }
+  return val;
+}
+
+function startWiz(type){
+  document.getElementById('nv-home-wrap').style.display='none';
+  initEspeceSelects();
+  if(type==='prise'){
+    pStep=0;selTP=null;selRP='gardee';prisePoint=null;
+    document.getElementById('wiz-prise').classList.add('active');
+    updPUI();setTimeout(initPMap,120);
+  } else {
+    sStep=0;selTS=null;wps=[]; selectedBuds=new Set();
+    document.getElementById('s-date').value=today();
+    renderBudsList();
+    document.getElementById('wiz-sortie').classList.add('active');
+    updSUI();setTimeout(initWpMap,120);
+  }
+}
+
+function wBack(t){if(t==='prise'){if(pStep===0)showNvHome();else{pStep--;updPUI();}}else{if(sStep===0)showNvHome();else{sStep--;updSUI();}}}
+function wPrev(t){if(t==='prise'){pStep--;updPUI();}else{sStep--;updSUI();}}
+function wNext(t){
+  if(t==='prise'){
+    if(pStep===0&&!prisePoint){alert('Place un point sur la carte.');return;}
+    if(pStep===1){if(!document.getElementById('p-esp').value){alert('Choisis une espèce.');return;}if(!selTP){alert('Choisis une technique.');return;}}
+    if(pStep===2){savePrise();return;}
+    pStep++;updPUI();
+  } else {
+    if(sStep===0&&wps.length<1){alert('Place au moins un waypoint.');return;}
+    if(sStep===1&&!selTS){alert('Choisis un type de sortie.');return;}
+    if(sStep===2){saveSortie();return;}
+    sStep++;updSUI();
+  }
+}
+
+function updPUI(){
+  for(let i=0;i<3;i++){document.getElementById('ps'+i).classList.toggle('active',i===pStep);const d=document.getElementById('pd'+i);d.className='sdot';if(i===pStep)d.classList.add('cur');else if(i<pStep)d.classList.add('dn');}
+  document.getElementById('p-prev').style.display=pStep>0?'inline-flex':'none';
+  const nb=document.getElementById('p-next');
+  if(pStep===2){nb.textContent='Enregistrer ✓';nb.className='btn btn-ok';}else{nb.textContent='Suivant →';nb.className='btn btn-p';}
+  if(pStep===0)setTimeout(()=>priseMapInst&&priseMapInst.invalidateSize(),80);
+  if(pStep===2){ const pd=document.getElementById('p-date'); if(pd&&!pd.value) pd.value=today(); }
+}
+function updSUI(){
+  for(let i=0;i<3;i++){document.getElementById('ss'+i).classList.toggle('active',i===sStep);const d=document.getElementById('sd'+i);d.className='sdot';if(i===sStep)d.classList.add('cur');else if(i<sStep)d.classList.add('dn');}
+  document.getElementById('s-prev').style.display=sStep>0?'inline-flex':'none';
+  const nb=document.getElementById('s-next');
+  if(sStep===2){nb.textContent='Enregistrer ✓';nb.className='btn btn-ok';}else{nb.textContent='Suivant →';nb.className='btn btn-p';}
+  if(sStep===0)setTimeout(()=>wpMapInst&&wpMapInst.invalidateSize(),80);
+}
+
+function initPMap(){
+  if(priseMapInst){priseMapInst.invalidateSize();return;}
+  priseMapInst=L.map('prise-map').setView([46.5,2.5],6);
+  addTiles(priseMapInst);
+  priseMapInst.on('click',e=>{
+    prisePoint=[e.latlng.lat,e.latlng.lng];
+    if(priseMarker)priseMapInst.removeLayer(priseMarker);
+    priseMarker=L.circleMarker(prisePoint,{radius:11,fillColor:CC,color:'white',weight:2.5,fillOpacity:0.95}).addTo(priseMapInst);
+    document.getElementById('prise-pt').innerHTML=`<div class="placed-ok">📍 ${prisePoint[0].toFixed(4)}, ${prisePoint[1].toFixed(4)}</div>`;
+  });
+}
+function clearPt(){prisePoint=null;if(priseMarker&&priseMapInst){priseMapInst.removeLayer(priseMarker);priseMarker=null;}document.getElementById('prise-pt').innerHTML='';}
+
+function selTech(t){
+  selTP=t;
+  document.getElementById('tb-p').className='ttbtn'+(t==='peche'?' ag':'');
+  document.getElementById('tb-c').className='ttbtn'+(t==='chasse'?' ab':'');
+  document.getElementById('p-st').innerHTML=(t==='peche'?getSTP():STC).map(v=>`<option>${v}</option>`).join('');
+  document.getElementById('st-wrap').style.display='block';
+  document.getElementById('rel-wrap').style.display=t==='peche'?'block':'none';
+  const vw=document.getElementById('p-visi-wrap');
+  if(vw) vw.style.display=t==='chasse'?'block':'none';
+}
+function selRel(r){selRP=r;document.getElementById('rb-g').classList.toggle('active',r==='gardee');document.getElementById('rb-r').classList.toggle('active',r==='relachee');}
+function toggleCustomTech(){
+  const v=document.getElementById('p-st').value;
+  document.getElementById('p-st-custom-wrap').style.display=v==='Autre'?'block':'none';
+  if(v!=='Autre'){const el=document.getElementById('p-st-custom');if(el)el.value='';}
+}
+
+function initWpMap(){
+  if(wpMapInst){wpMapInst.invalidateSize();renderWps();return;}
+  wpMapInst=L.map('sortie-map').setView([46.5,2.5],6);
+  addTiles(wpMapInst);
+  wpMapInst.on('click',e=>{wps.push([e.latlng.lat,e.latlng.lng]);renderWps();});
+}
+function renderWps(){
+  if(!wpMapInst)return;
+  wpMks.forEach(m=>wpMapInst.removeLayer(m));wpMks=[];
+  if(wpPoly){wpMapInst.removeLayer(wpPoly);wpPoly=null;}
+  const col=selTS==='chasse'?CC:CP;
+  wps.forEach(wp=>{const m=L.circleMarker(wp,{radius:6,fillColor:col,color:'white',weight:2,fillOpacity:0.9}).addTo(wpMapInst);wpMks.push(m);});
+  if(wps.length>1)wpPoly=L.polyline(wps,{color:col,weight:3,opacity:0.85}).addTo(wpMapInst);
+  document.getElementById('wp-list').innerHTML=wps.map((wp,i)=>`<div class="wp-item">Waypoint ${i+1} — ${wp[0].toFixed(4)}, ${wp[1].toFixed(4)}</div>`).join('');
+}
+function undoWp(){wps.pop();renderWps();}
+function clearWps(){wps=[];renderWps();}
+
+function selST(t){
+  selTS=t;
+  document.getElementById('stb-p').className='ttbtn'+(t==='peche'?' ag':'');
+  document.getElementById('stb-c').className='ttbtn'+(t==='chasse'?' ab':'');
+  document.getElementById('s-st').innerHTML=SORT_T[t].map(v=>`<option>${v}</option>`).join('');
+  document.getElementById('s-st-wrap').style.display='block';
+  document.getElementById('s-visi-wrap').style.display=t==='chasse'?'block':'none';
+  renderBudsList();
+  renderWps();
+}
+
+function savePrise(){
+  const p={id:Date.now(),espece:document.getElementById('p-esp').value,taille:document.getElementById('p-tail').value||null,
+    technique:selTP,soustech:(()=>{
+      const v=document.getElementById('p-st').value;
+      if(v==='Autre'){
+        const custom=document.getElementById('p-st-custom')?.value?.trim();
+        if(custom){
+          if(!customTechs.includes(custom)){customTechs.push(custom);localStorage.setItem('cdm_custom_techs',JSON.stringify(customTechs));}
+          return custom;
+        }
+      }
+      return v||null;
+    })(),
+    relache:selTP==='peche'?selRP:'non',lat:prisePoint?prisePoint[0]:null,lon:prisePoint?prisePoint[1]:null,
+    visi:document.getElementById('p-visi').value||null,heure:document.getElementById('p-heure').value||null,
+    maree:document.getElementById('p-maree').value,comment:document.getElementById('p-com').value.trim()||null,date:today()};
+  prises.unshift(p);localStorage.setItem('cdm_prises',JSON.stringify(prises));
+  resetP();showNvHome();showTab('carto',0);
+  setTimeout(()=>{renderMapLayers();setMapView('prises');},300);
+  toast('Prise enregistrée ✓');
+  patchDriveSave();
+}
+function saveSortie(){
+  const s={id:Date.now(),waypoints:[...wps],technique:selTS,soustech:document.getElementById('s-st').value||null,
+    date:document.getElementById('s-date').value,dep:document.getElementById('s-dep').value,ret:document.getElementById('s-ret').value,
+    maree:document.getElementById('s-maree').value,nbPrises:document.getElementById('s-nb').value,
+    visi:selTS==='chasse'?(document.getElementById('s-visi').value||null):null,
+    comment:document.getElementById('s-com').value.trim()||null,
+    buds:[...selectedBuds]};
+  sorties.unshift(s);localStorage.setItem('cdm_sorties',JSON.stringify(sorties));
+  resetS();showNvHome();showTab('carto',0);
+  setTimeout(()=>{renderMapLayers();setMapView('sorties');},300);
+  toast('Sortie enregistrée ✓');
+  patchDriveSave();
+}
+
+function resetP(){
+  pStep=0;prisePoint=null;selTP=null;selRP='gardee';
+  if(priseMarker&&priseMapInst){priseMapInst.removeLayer(priseMarker);priseMarker=null;}
+  document.getElementById('prise-pt').innerHTML='';
+  ['p-esp','p-tail','p-visi','p-heure','p-com','p-date','p-esp-custom'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';}); document.getElementById('p-esp-custom-wrap').style.display='none'; const vw=document.getElementById('p-visi-wrap'); if(vw) vw.style.display='none';
+  document.getElementById('st-wrap').style.display='none';document.getElementById('rel-wrap').style.display='none';
+  document.getElementById('tb-p').className='ttbtn';document.getElementById('tb-c').className='ttbtn';
+  document.getElementById('wiz-prise').classList.remove('active');
+}
+function resetS(){
+  sStep=0;selTS=null;wps=[];
+  if(wpMapInst){wpMks.forEach(m=>wpMapInst.removeLayer(m));if(wpPoly)wpMapInst.removeLayer(wpPoly);}
+  wpMks=[];wpPoly=null;
+  document.getElementById('s-st-wrap').style.display='none';
+  document.getElementById('s-visi-wrap').style.display='none';
+  document.getElementById('stb-p').className='ttbtn';document.getElementById('stb-c').className='ttbtn';
+  ['s-dep','s-ret','s-com','s-visi'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  document.getElementById('s-nb').value='0';document.getElementById('wp-list').innerHTML='';
+  selectedBuds=new Set(); renderBudsList();
+  document.getElementById('wiz-sortie').classList.remove('active');
+}
+
+function toast(msg){
+  const t=document.createElement('div');t.textContent=msg;
+  Object.assign(t.style,{position:'fixed',bottom:'72px',left:'50%',transform:'translateX(-50%)',
+    background:'#1a4d6e',color:'white',padding:'8px 20px',borderRadius:'22px',fontSize:'12px',
+    fontWeight:'700',zIndex:'9999',boxShadow:'0 4px 18px rgba(0,0,0,0.25)',
+    fontFamily:"'DM Sans',sans-serif",transition:'opacity 0.3s',whiteSpace:'nowrap'});
+  document.body.appendChild(t);
+  setTimeout(()=>{t.style.opacity='0';setTimeout(()=>t.remove(),300);},2200);
+}
+function today(){return new Date().toISOString().split('T')[0];}
+
+// ════════════════════════════ GOOGLE DRIVE SYNC ════════════════════════════
+const GDRIVE_CLIENT_ID = '647087153645-nn9q4usskpsrus7qesf8ricoh40o2gmh.apps.googleusercontent.com';
+const GDRIVE_SCOPES = 'https://www.googleapis.com/auth/drive.appdata';
+const GDRIVE_FILE = 'carnet_de_mer_data.json';
+
+let gdriveToken = null;
+let gdriveFileId = null;
+let gdriveSyncing = false;
+
+function driveSetStatus(state, txt){
+  const dot=document.getElementById('drive-dot');
+  const stxt=document.getElementById('drive-status-txt');
+  const syncBtn=document.getElementById('drive-sync-btn');
+  const connBtn=document.getElementById('drive-connect-btn');
+  if(dot) dot.className='drive-dot '+state;
+  if(stxt) stxt.textContent=txt;
+  if(state==='connected'){
+    if(syncBtn) syncBtn.style.display='inline-block';
+    if(connBtn) connBtn.style.display='none';
+  } else if(state==='syncing'){
+    if(syncBtn) syncBtn.style.display='none';
+    if(connBtn) connBtn.style.display='none';
+  } else {
+    if(syncBtn) syncBtn.style.display='none';
+    if(connBtn) connBtn.style.display='inline-block';
+  }
+}
+
+function driveSignIn(){
+  const client = google.accounts.oauth2.initTokenClient({
+    client_id: GDRIVE_CLIENT_ID,
+    scope: GDRIVE_SCOPES,
+    callback: async (resp) => {
+      if(resp.error){ driveSetStatus('error','Erreur de connexion'); return; }
+      gdriveToken = resp.access_token;
+      localStorage.setItem('gdrive_token_hint','connected');
+      driveSetStatus('syncing','Connexion en cours...');
+      await driveFindOrCreateFile();
+      await driveLoad();
+    }
+  });
+  client.requestAccessToken();
+}
+
+async function driveFindOrCreateFile(){
+  // Search in appDataFolder
+  const search = await fetch(
+    'https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name%3D%22'+GDRIVE_FILE+'%22&fields=files(id,name)',
+    {headers:{Authorization:'Bearer '+gdriveToken}}
+  );
+  const res = await search.json();
+  if(res.files && res.files.length > 0){
+    gdriveFileId = res.files[0].id;
+  } else {
+    // Create file
+    const meta = {name:GDRIVE_FILE,parents:['appDataFolder']};
+    const create = await fetch('https://www.googleapis.com/drive/v3/files',{
+      method:'POST',
+      headers:{Authorization:'Bearer '+gdriveToken,'Content-Type':'application/json'},
+      body:JSON.stringify(meta)
+    });
+    const f = await create.json();
+    gdriveFileId = f.id;
+    // Upload initial empty data
+    await driveSave();
+  }
+}
+
+async function driveLoad(){
+  if(!gdriveToken||!gdriveFileId)return;
+  driveSetStatus('syncing','Chargement...');
+  try{
+    const resp = await fetch(
+      'https://www.googleapis.com/drive/v3/files/'+gdriveFileId+'?alt=media',
+      {headers:{Authorization:'Bearer '+gdriveToken}}
+    );
+    if(!resp.ok){ driveSetStatus('error','Erreur de chargement'); return; }
+    const data = await resp.json();
+    if(data.prises) prises = data.prises;
+    if(data.sorties) sorties = data.sorties;
+    if(data.customTechs) { customTechs = data.customTechs; localStorage.setItem('cdm_custom_techs',JSON.stringify(customTechs)); }
+    if(data.customEspeces) { customEspeces = data.customEspeces; localStorage.setItem('cdm_custom_especes',JSON.stringify(customEspeces)); }
+    if(data.customBuds) { customBuds = data.customBuds; localStorage.setItem('cdm_custom_buds',JSON.stringify(customBuds)); }
+    // Save locally too
+    localStorage.setItem('cdm_prises',JSON.stringify(prises));
+    localStorage.setItem('cdm_sorties',JSON.stringify(sorties));
+    driveSetStatus('connected','Drive connecté ✓ — '+prises.length+' prises, '+sorties.length+' sorties');
+    // Refresh UI
+    renderMapLayers();
+    if(document.getElementById('page-stats').classList.contains('active')) renderStats();
+    if(document.getElementById('page-historique').classList.contains('active')) renderHist();
+    toast('Données chargées depuis Google Drive ✓');
+  } catch(e){
+    driveSetStatus('error','Erreur : '+e.message);
+  }
+}
+
+async function driveSave(){
+  if(!gdriveToken||!gdriveFileId)return;
+  gdriveSyncing=true;
+  driveSetStatus('syncing','Sauvegarde...');
+  try{
+    const data={
+      prises, sorties, customTechs, customEspeces, customBuds,
+      lastSaved: new Date().toISOString()
+    };
+    await fetch(
+      'https://www.googleapis.com/upload/drive/v3/files/'+gdriveFileId+'?uploadType=media',
+      {
+        method:'PATCH',
+        headers:{Authorization:'Bearer '+gdriveToken,'Content-Type':'application/json'},
+        body:JSON.stringify(data)
+      }
+    );
+    driveSetStatus('connected','Drive connecté ✓ — sauvegardé '+new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}));
+  } catch(e){
+    driveSetStatus('error','Erreur de sauvegarde');
+  }
+  gdriveSyncing=false;
+}
+
+async function driveSync(){
+  if(!gdriveToken){ driveSignIn(); return; }
+  await driveLoad();
+}
+
+// Auto-save after every prise/sortie save
+const _origSavePrise = savePrise;
+// Patch save functions to trigger drive save
+function patchDriveSave(){
+  // Called after localStorage updates
+  if(gdriveToken) driveSave();
+}
+
+// ════════════════════════════ INIT ════════════════════════════
+applyTheme();
+// Init map on first load using double rAF to ensure layout is complete
+requestAnimationFrame(()=>requestAnimationFrame(initMainMap));
+// Auto-reconnect if previously connected (token won't persist but hint will)
+if(localStorage.getItem('gdrive_token_hint')==='connected'){
+  setTimeout(()=>{
+    driveSetStatus('','Reconnexion Drive...');
+    driveSignIn();
+  }, 1000);
+}
+</script>
+</body>
+</html>
