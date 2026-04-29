@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr" data-theme="light" style="color-scheme:light">
+<html lang="fr" data-theme="light">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -74,7 +74,15 @@
   --shadow:0 2px 14px rgba(0,0,0,0.08); --shadow-lg:0 10px 40px rgba(0,0,0,0.13);
   --pie-hole:rgba(250,248,243,1);
 }
-
+[data-theme="dark"] {
+  --bg:#111418; --bg2:#181d23; --bg3:#222830;
+  --surface:#1c2128; --surface2:#232b34;
+  --border:rgba(255,255,255,0.08); --border2:rgba(255,255,255,0.15);
+  --text:#e8edf2; --text2:#8a99aa; --text3:#55677a;
+  --tab-bg:#e8edf2; --tab-active:#111418; --tab-inactive:rgba(17,20,24,0.4);
+  --shadow:0 2px 14px rgba(0,0,0,0.4); --shadow-lg:0 10px 40px rgba(0,0,0,0.5);
+  --pie-hole:rgba(28,33,40,1);
+}
 :root {
   --green:#2e8a55; --green2:#3aaa6a; --green-light:#d4f0e2;
   --sky:#2478b5; --sky2:#3090d0; --sky-light:#d0e9f7;
@@ -190,7 +198,7 @@ h1,h2,h3,h4,.page-title,.section-lbl,.kpi-lbl,.ssec,.fsec,.wiz-title,.hist-title
 .theme-bar{
   height:calc(40px + env(safe-area-inset-bottom));
   padding-bottom:env(safe-area-inset-bottom);
-  display:flex;align-items:center;justify-content:center;
+  display:flex;align-items:center;justify-content:space-between;
   padding-left:16px;padding-right:16px;
   border-top:1px solid var(--border);background:var(--surface);flex-shrink:0;
 }
@@ -267,7 +275,7 @@ h1,h2,h3,h4,.page-title,.section-lbl,.kpi-lbl,.ssec,.fsec,.wiz-title,.hist-title
   color:var(--text);margin-bottom:12px;margin-top:4px;
   border-bottom:1px solid var(--border2);padding-bottom:6px;
 }
-
+[data-theme="dark"] .ssec{color:var(--text);}
 .sblk{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 18px;margin-bottom:16px;}
 
 /* Records */
@@ -276,12 +284,12 @@ h1,h2,h3,h4,.page-title,.section-lbl,.kpi-lbl,.ssec,.fsec,.wiz-title,.hist-title
 .rec-tbl td{padding:8px 0;font-size:13px;border-top:1px solid var(--border);}
 .rec-tbl tr:first-child td{border-top:none;}
 .rec-sz{font-family:'Merriweather',serif;font-size:17px;font-weight:700;color:var(--accent);}
-
+[data-theme="dark"] .rec-sz{color:var(--sky2);}
 .btech{font-size:10px;padding:2px 7px;border-radius:10px;text-transform:none;}
 .bp{background:var(--green-light);color:var(--green);}
 .bc{background:var(--sky-light);color:var(--sky);}
-
-
+[data-theme="dark"] .bp{background:rgba(46,138,85,0.2);color:#5ecf8a;}
+[data-theme="dark"] .bc{background:rgba(36,120,181,0.2);color:#5ab8f0;}
 
 /* Species block */
 .sp-row{margin-bottom:12px;}
@@ -306,7 +314,7 @@ h1,h2,h3,h4,.page-title,.section-lbl,.kpi-lbl,.ssec,.fsec,.wiz-title,.hist-title
   cursor:pointer;transition:all .15s;user-select:none;}
 .bud-item:hover{border-color:var(--border2);background:var(--bg2);}
 .bud-item.checked{background:var(--accent-light,#ddeef7);border-color:var(--accent);}
-
+[data-theme="dark"] .bud-item.checked{background:rgba(26,77,110,0.3);border-color:var(--accent2);}
 .bud-check{width:14px;height:14px;border-radius:3px;border:1.5px solid var(--border2);
   background:transparent;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
 .bud-item.checked .bud-check{background:var(--accent);border-color:var(--accent);}
@@ -381,8 +389,8 @@ h1,h2,h3,h4,.page-title,.section-lbl,.kpi-lbl,.ssec,.fsec,.wiz-title,.hist-title
 .hist-icon{width:36px;height:36px;border-radius:var(--radius);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;}
 .hi-prise{background:var(--sky-light);}
 .hi-sortie{background:var(--green-light);}
-
-
+[data-theme="dark"] .hi-prise{background:rgba(36,120,181,0.15);}
+[data-theme="dark"] .hi-sortie{background:rgba(46,138,85,0.15);}
 .hist-info{flex:1;min-width:0;}
 .hist-title{font-size:13px;font-weight:700;letter-spacing:.04em;}
 .hist-meta{font-size:11px;color:var(--text2);margin-top:2px;}
@@ -397,7 +405,7 @@ h1,h2,h3,h4,.page-title,.section-lbl,.kpi-lbl,.ssec,.fsec,.wiz-title,.hist-title
 .hact-btn:hover{background:var(--bg2);border-color:var(--border2);}
 .hact-btn.del:hover{background:#fde8e8;color:#922;border-color:#f5bcbc;}
 .hact-btn.view{background:var(--sky-light);color:var(--sky);border-color:var(--sky-light);}
-
+[data-theme="dark"] .hact-btn.view{background:rgba(36,120,181,0.2);color:#5ab8f0;}
 .hact-btn.view:hover{border-color:var(--sky);}
 .hist-empty{text-align:center;padding:60px 20px;color:var(--text3);font-size:13px;}
 
@@ -440,11 +448,11 @@ h1,h2,h3,h4,.page-title,.section-lbl,.kpi-lbl,.ssec,.fsec,.wiz-title,.hist-title
 .smap{width:100%;height:370px;border-radius:var(--radius-lg);overflow:hidden;border:1px solid var(--border);}
 .shint{background:var(--accent);color:white;border-radius:var(--radius);padding:8px 13px;font-size:12px;margin-bottom:9px;line-height:1.5;}
 .placed-ok{background:var(--green-light);border:1px solid rgba(46,138,85,0.3);color:var(--green);border-radius:var(--radius);padding:6px 11px;font-size:12px;margin-top:7px;}
-
+[data-theme="dark"] .placed-ok{background:rgba(46,138,85,0.15);color:#5ecf8a;}
 .map-acts{display:flex;gap:7px;margin-top:7px;flex-wrap:wrap;}
 .wp-list{margin-top:7px;display:flex;flex-direction:column;gap:3px;}
 .wp-item{display:flex;align-items:center;justify-content:space-between;background:var(--sky-light);border:1px solid rgba(36,120,181,0.2);border-radius:var(--radius);padding:5px 10px;font-size:11px;color:var(--sky);}
-
+[data-theme="dark"] .wp-item{background:rgba(36,120,181,0.12);color:#5ab8f0;}
 
 /* Form */
 .fsec{font-size:9px;font-weight:700;letter-spacing:.1em;color:var(--text3);margin:15px 0 9px;}
@@ -465,8 +473,8 @@ h1,h2,h3,h4,.page-title,.section-lbl,.kpi-lbl,.ssec,.fsec,.wiz-title,.hist-title
 .ttbtn:hover{box-shadow:var(--shadow);}
 .ttbtn.ag{border-color:var(--green);background:var(--green-light);}
 .ttbtn.ab{border-color:var(--sky);background:var(--sky-light);}
-
-
+[data-theme="dark"] .ttbtn.ag{background:rgba(46,138,85,0.15);}
+[data-theme="dark"] .ttbtn.ab{background:rgba(36,120,181,0.15);}
 .ti{font-size:20px;margin-bottom:4px;}
 .tl{font-size:12px;font-weight:500;color:var(--text);text-transform:none;}
 .ttbtn.ag .tl{color:var(--green);}
@@ -474,7 +482,7 @@ h1,h2,h3,h4,.page-title,.section-lbl,.kpi-lbl,.ssec,.fsec,.wiz-title,.hist-title
 .rtog{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:4px;}
 .rbtn{padding:8px;border-radius:var(--radius);border:1.5px solid var(--border2);background:var(--surface);cursor:pointer;text-align:center;font-size:12px;font-weight:500;transition:all .15s;font-family:'DM Sans',sans-serif;color:var(--text2);text-transform:none;}
 .rbtn.active{border-color:var(--accent);background:var(--sky-light);color:var(--accent);}
-
+[data-theme="dark"] .rbtn.active{background:rgba(36,120,181,0.2);}
 .wiz-ftr{padding:11px 22px 16px;border-top:1px solid var(--border);background:var(--surface);display:flex;gap:9px;justify-content:flex-end;flex-shrink:0;}
 .btn{display:inline-flex;align-items:center;gap:7px;padding:8px 18px;border-radius:var(--radius);font-size:10px;font-weight:700;letter-spacing:.06em;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;border:none;}
 .btn-p{background:var(--accent);color:white;}
@@ -516,12 +524,6 @@ h1,h2,h3,h4,.page-title,.section-lbl,.kpi-lbl,.ssec,.fsec,.wiz-title,.hist-title
 @media(max-width:900px){.kpi-grid{grid-template-columns:repeat(3,1fr);}}
 @media(max-width:560px){.kpi-grid{grid-template-columns:repeat(2,1fr);}.pies-wrap{grid-template-columns:1fr;}.stats-body,.hist-body{padding:14px 14px 8px;}}
 
-/* ══════ FILTRE ZONE ESPECES ══════ */
-.zone-filter{display:flex;gap:6px;margin-bottom:14px;}
-.zf-chip{padding:5px 14px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:.06em;
-  cursor:pointer;border:1px solid var(--border2);background:var(--surface);color:var(--text2);
-  font-family:"DM Sans",sans-serif;transition:all .12s;text-transform:uppercase;}
-.zf-chip.active{background:#BDBDC1;color:#333;border-color:#a0a0a5;}
 /* ══════ ZONE TOGGLE ══════ */
 .zone-toggle{display:flex;gap:10px;margin-top:4px;}
 .zone-btn{
@@ -558,6 +560,23 @@ h1,h2,h3,h4,.page-title,.section-lbl,.kpi-lbl,.ssec,.fsec,.wiz-title,.hist-title
 .subpage-back{width:32px;height:32px;border-radius:50%;border:1px solid var(--border2);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text2);font-size:15px;flex-shrink:0;}
 .subpage-title{font-family:"Merriweather",serif;font-size:16px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;}
 .subpage-body{flex:1;overflow-y:auto;padding:20px 24px 12px;}
+
+/* Filtre zone espèces */
+.zf-bar{display:flex;gap:6px;margin-bottom:14px;}
+.zf-chip{padding:5px 14px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;border:1px solid var(--border2);background:var(--surface);color:var(--text2);font-family:"DM Sans",sans-serif;transition:all .12s;}
+.zf-chip.active{background:#BDBDC1;color:#333;border-color:#a0a0a5;}
+/* Cases marée */
+.m4-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+.m4-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:10px 6px;text-align:center;}
+.m4-title{font-size:8px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#333;margin-bottom:8px;}
+.m4-cols{display:flex;gap:6px;justify-content:center;align-items:flex-end;margin-bottom:6px;}
+.m4-col{display:flex;flex-direction:column;align-items:center;gap:2px;}
+.m4-prises{font-size:11px;font-weight:700;color:#333;}
+.m4-bar{width:16px;height:30px;border-radius:3px;}
+.m4-sorties{font-size:10px;color:#333;}
+.m4-legend{display:flex;gap:8px;justify-content:center;margin-top:8px;}
+.m4-leg{display:flex;align-items:center;gap:4px;font-size:9px;color:#333;}
+.m4-leg-dot{width:8px;height:8px;border-radius:2px;}
 </style>
 </head>
 <body>
@@ -626,13 +645,8 @@ h1,h2,h3,h4,.page-title,.section-lbl,.kpi-lbl,.ssec,.fsec,.wiz-title,.hist-title
     <button class="mls-btn" id="mls-sat" onclick="setBaseLayer('sat','main')"><span class="mls-icon">🛰️</span>Satellite</button>
   </div>
   <div class="theme-bar">
-      <div class="drive-status" style="gap:8px;">
-        <div class="drive-dot" id="drive-dot"></div>
-        <span class="drive-status-txt" id="drive-status-txt">Non connecté</span>
-        <button class="drive-btn" id="drive-sync-btn" onclick="driveSync()" style="display:none">↻ Sync</button>
-        <button class="drive-btn primary" id="drive-connect-btn" onclick="driveSignIn()">Connecter Drive</button>
-      </div>
-    </div>
+    <div class="drive-status">
+      <div class="drive-dot" id="drive-dot"></div>
       <span class="drive-status-txt" id="drive-status-txt">Non connecté</span>
       <button class="drive-btn" id="drive-sync-btn" onclick="driveSync()" style="display:none">↻ Sync</button>
       <button class="drive-btn primary" id="drive-connect-btn" onclick="driveSignIn()">Connecter Drive</button>
@@ -656,10 +670,10 @@ h1,h2,h3,h4,.page-title,.section-lbl,.kpi-lbl,.ssec,.fsec,.wiz-title,.hist-title
     <div class="stats-subpage" id="sub-especes">
       <div class="subpage-hdr"><button class="subpage-back" onclick="backToStatsHome()">←</button><div class="subpage-title">Espèces</div></div>
       <div class="subpage-body">
-        <div class="zone-filter">
-          <button class="zf-chip active" onclick="setEspeceZone('all',this)">Toutes zones</button>
-          <button class="zf-chip" onclick="setEspeceZone('atlantique',this)">Atlantique</button>
-          <button class="zf-chip" onclick="setEspeceZone('mediterranee',this)">Méditerranée</button>
+        <div class="zf-bar">
+          <button class="zf-chip active" onclick="setEspZone('all',this)">Toutes zones</button>
+          <button class="zf-chip" onclick="setEspZone('atlantique',this)">Atlantique</button>
+          <button class="zf-chip" onclick="setEspZone('mediterranee',this)">Méditerranée</button>
         </div>
         <div class="ssec">Records</div>
         <div class="sblk"><table class="rec-tbl"><thead><tr><th>Espèce</th><th>Taille</th><th>Date</th><th>Technique</th></tr></thead><tbody id="rec-body"></tbody></table></div>
@@ -712,20 +726,11 @@ h1,h2,h3,h4,.page-title,.section-lbl,.kpi-lbl,.ssec,.fsec,.wiz-title,.hist-title
             <div id="monthly-detail-list" style="font-size:12px;color:var(--text2);"></div>
           </div>
         </div>
-        <div class="ssec" style="margin-top:20px;">Marées Atlantique</div>
-        <div class="sblk">
-          <div class="maree4-grid" id="maree4-grid"></div>
-          <div class="maree4-legend">
-            <div class="maree4-leg"><div class="maree4-leg-dot" style="background:var(--green)"></div>Pêche</div>
-            <div class="maree4-leg"><div class="maree4-leg-dot" style="background:var(--sky)"></div>Chasse</div>
-          </div>
-        </div>
       </div>
     </div>
   </div>
   <div class="theme-bar">
-      <button class="drive-btn" id="drive-sync-btn-1" onclick="driveSync()" style="display:none">↻ Sync</button>
-    </div>
+    <div></div>
     <button class="theme-btn" onclick="toggleTheme()"><span class="ti-ic">☀️</span>&nbsp;<span class="ti-lb">Mode clair</span></button>
   </div>
 </div>
@@ -742,8 +747,7 @@ h1,h2,h3,h4,.page-title,.section-lbl,.kpi-lbl,.ssec,.fsec,.wiz-title,.hist-title
     <div class="hist-list" id="hist-list"></div>
   </div>
   <div class="theme-bar">
-      <button class="drive-btn" id="drive-sync-btn-2" onclick="driveSync()" style="display:none">↻ Sync</button>
-    </div>
+    <div></div>
     <button class="theme-btn" onclick="toggleTheme()"><span class="ti-ic">☀️</span>&nbsp;<span class="ti-lb">Mode clair</span></button>
   </div>
 </div>
@@ -759,8 +763,7 @@ h1,h2,h3,h4,.page-title,.section-lbl,.kpi-lbl,.ssec,.fsec,.wiz-title,.hist-title
       </div>
     </div>
     <div class="theme-bar">
-      <button class="drive-btn" id="drive-sync-btn-3" onclick="driveSync()" style="display:none">↻ Sync</button>
-    </div>
+      <div></div>
     <button class="theme-btn" onclick="toggleTheme()"><span class="ti-ic">☀️</span>&nbsp;<span class="ti-lb">Mode clair</span></button>
     </div>
   </div>
@@ -1101,7 +1104,7 @@ function applyTheme() {
     }
   });
 }
-function toggleTheme(){}
+function toggleTheme(){ isDark=!isDark; localStorage.setItem('cdm_theme',isDark?'dark':'light'); applyTheme(); if(document.getElementById('page-stats').classList.contains('active')) renderStats(); }
 // ════════════════════════════ TILES ════════════════════════════
 // Per-map base layer state
 const mapLayerState = { main:'std', prise:'std', sortie:'std' };
@@ -1317,7 +1320,7 @@ function showStatsSub(name){
   if(name==='especes')   { renderRecords(); renderSpecies(); }
   if(name==='techniques'){ renderTechniques(); }
   if(name==='zones')     { renderMaree(); }
-  if(name==='temps')     { populateYearSelector(); renderMonthly(); renderHourly(); renderMaree4(); }
+  if(name==='temps')     { populateYearSelector(); renderMonthly(); renderHourly(); renderM4(); }
 }
 function backToStatsHome(){
   document.querySelectorAll('.stats-subpage').forEach(p=>p.classList.remove('active'));
@@ -1389,58 +1392,42 @@ function renderTechniques(){
 }
 
 
-let especeZoneFilter = 'all';
-function setEspeceZone(z, el){
-  especeZoneFilter = z;
+let espZone = 'all';
+function setEspZone(z, el){
+  espZone = z;
   document.querySelectorAll('.zf-chip').forEach(c=>c.classList.remove('active'));
   el.classList.add('active');
   renderRecords();
   renderSpecies();
 }
 
-function renderMaree4(){
-  const ATL = [
+function renderM4(){
+  const el = document.getElementById('m4-grid');
+  if(!el) return;
+  const TYPES = [
     {key:'montante',   label:'Montante'},
     {key:'etale-haute',label:'Haute'},
     {key:'descendante',label:'Descendante'},
     {key:'etale-basse', label:'Basse'},
   ];
-  const el = document.getElementById('maree4-grid');
-  if(!el) return;
-
-  const maxVal = Math.max(1, ...ATL.map(({key})=>{
+  el.innerHTML = TYPES.map(({key,label})=>{
     const ss = sorties.filter(s=>s.zone==='atlantique'&&s.maree===key);
-    const sp = ss.filter(s=>s.technique==='peche').length;
-    const sc = ss.filter(s=>s.technique==='chasse').length;
-    const pp = prises.filter(p=>p.zone==='atlantique'&&sorties.find(s=>s.zone==='atlantique'&&s.maree===key&&s.technique==='peche')?false:false).length;
-    return Math.max(sp,sc);
-  }));
-
-  el.innerHTML = ATL.map(({key,label})=>{
-    const ss = sorties.filter(s=>s.zone==='atlantique'&&s.maree===key);
-    const sortiesPeche  = ss.filter(s=>s.technique==='peche');
-    const sortiesChasse = ss.filter(s=>s.technique==='chasse');
-    const prisesPeche   = sortiesPeche.reduce((a,s)=>a+(parseInt(s.nbPrises)||0),0);
-    const prisesChasse  = sortiesChasse.reduce((a,s)=>a+(parseInt(s.nbPrises)||0),0);
-    const maxH = Math.max(sortiesPeche.length, sortiesChasse.length, 1);
-    const hP = Math.max(4, Math.round(sortiesPeche.length/maxH*50));
-    const hC = Math.max(4, Math.round(sortiesChasse.length/maxH*50));
-    return '<div class="maree4-card">'+
-      '<div class="maree4-title">'+label+'</div>'+
-      '<div class="maree4-cols">'+
-        '<div class="maree4-col">'+
-          '<div class="maree4-val" style="color:#333">'+prisesPeche+'</div>'+
-          '<div class="maree4-sub" style="color:#333">prises</div>'+
-          '<div class="maree4-bar" style="height:'+hP+'px;background:var(--green)"></div>'+
-          '<div class="maree4-val" style="color:#333">'+sortiesPeche.length+'</div>'+
-          '<div class="maree4-sub" style="color:#333">sorties</div>'+
+    const sp = ss.filter(s=>s.technique==='peche');
+    const sc = ss.filter(s=>s.technique==='chasse');
+    const pp = sp.reduce((a,s)=>a+(parseInt(s.nbPrises)||0),0);
+    const pc = sc.reduce((a,s)=>a+(parseInt(s.nbPrises)||0),0);
+    return '<div class="m4-card">'+
+      '<div class="m4-title">'+label+'</div>'+
+      '<div class="m4-cols">'+
+        '<div class="m4-col">'+
+          '<div class="m4-prises">'+pp+'</div>'+
+          '<div class="m4-bar" style="background:var(--green)"></div>'+
+          '<div class="m4-sorties">'+sp.length+' sorties</div>'+
         '</div>'+
-        '<div class="maree4-col">'+
-          '<div class="maree4-val" style="color:#333">'+prisesChasse+'</div>'+
-          '<div class="maree4-sub" style="color:#333">prises</div>'+
-          '<div class="maree4-bar" style="height:'+hC+'px;background:var(--sky)"></div>'+
-          '<div class="maree4-val" style="color:#333">'+sortiesChasse.length+'</div>'+
-          '<div class="maree4-sub" style="color:#333">sorties</div>'+
+        '<div class="m4-col">'+
+          '<div class="m4-prises">'+pc+'</div>'+
+          '<div class="m4-bar" style="background:var(--sky)"></div>'+
+          '<div class="m4-sorties">'+sc.length+' sorties</div>'+
         '</div>'+
       '</div>'+
     '</div>';
@@ -1449,8 +1436,8 @@ function renderMaree4(){
 
 function renderRecords(){
   const recs={};
-  const filteredP = especeZoneFilter==='all' ? prises : prises.filter(p=>p.zone===especeZoneFilter);
-  filteredP.forEach(p=>{if(p.taille){const t=parseFloat(p.taille);if(!recs[p.espece]||t>recs[p.espece].t)recs[p.espece]={t,date:p.date,tech:p.technique,st:p.soustech};}});
+  const pFiltered = espZone==='all'?prises:prises.filter(p=>p.zone===espZone);
+  pFiltered.forEach(p=>{if(p.taille){const t=parseFloat(p.taille);if(!recs[p.espece]||t>recs[p.espece].t)recs[p.espece]={t,date:p.date,tech:p.technique,st:p.soustech};}});
   const ra=Object.entries(recs).sort((a,b)=>b[1].t-a[1].t);
   document.getElementById('rec-body').innerHTML=ra.length?ra.map(([e,r])=>{
     const d=r.date?new Date(r.date+'T12:00:00').toLocaleDateString('fr-FR'):'—';
@@ -1460,7 +1447,7 @@ function renderRecords(){
 }
 function renderSpecies(){
   const bsByEsp={};
-  const filteredP = especeZoneFilter==='all' ? prises : prises.filter(p=>p.zone===especeZoneFilter);
+  const filteredP=espZone==='all'?prises:prises.filter(p=>p.zone===espZone);
   filteredP.forEach(p=>{
     if(!bsByEsp[p.espece])bsByEsp[p.espece]={total:0,peche:0,chasse:0,rel:0};
     bsByEsp[p.espece].total++;
@@ -1499,7 +1486,7 @@ function renderStats(){
 
   // Records
   const recs={};
-  prises.forEach(p=>{if(p.taille){const t=parseFloat(p.taille);if(!recs[p.espece]||t>recs[p.espece].t)recs[p.espece]={t,date:p.date,tech:p.technique,st:p.soustech};}});
+  pFiltered.forEach(p=>{if(p.taille){const t=parseFloat(p.taille);if(!recs[p.espece]||t>recs[p.espece].t)recs[p.espece]={t,date:p.date,tech:p.technique,st:p.soustech};}});
   const ra=Object.entries(recs).sort((a,b)=>b[1].t-a[1].t);
   document.getElementById('rec-body').innerHTML=ra.length?ra.map(([e,r])=>{
     const d=r.date?new Date(r.date+'T12:00:00').toLocaleDateString('fr-FR'):'—';
